@@ -125,7 +125,3 @@ MIX_ENV=prod mix release
 # Run release
 _build/prod/rel/elixir_systems_mastery/bin/elixir_systems_mastery start
 ```
-
-## 📄 License
-
-MIT - See [LICENSE](LICENSE)
