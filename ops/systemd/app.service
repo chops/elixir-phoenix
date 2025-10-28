@@ -1,0 +1,32 @@
+[Unit]
+Description=Elixir Systems Mastery Application
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=app
+Group=app
+WorkingDirectory=/opt/elixir_systems_mastery
+Environment="MIX_ENV=prod"
+Environment="RELEASE_COOKIE=your_secret_cookie_here"
+Environment="DATABASE_URL=ecto://user:pass@localhost/elixir_systems_prod"
+EnvironmentFile=/opt/elixir_systems_mastery/.env
+
+ExecStart=/opt/elixir_systems_mastery/bin/elixir_systems_mastery start
+ExecStop=/opt/elixir_systems_mastery/bin/elixir_systems_mastery stop
+
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=elixir_systems_mastery
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/elixir_systems_mastery
+
+[Install]
+WantedBy=multi-user.target

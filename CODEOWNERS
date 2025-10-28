@@ -1,0 +1,38 @@
+# CODEOWNERS file for elixir-phoenix
+#
+# This file defines individuals or teams responsible for code in this repository.
+# When someone opens a pull request, GitHub automatically requests reviews from these owners.
+#
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners - fallback for everything
+* @YOUR_GITHUB_USERNAME
+
+# Documentation
+/docs/ @YOUR_GITHUB_USERNAME
+*.md @YOUR_GITHUB_USERNAME
+
+# Configuration files
+/.github/ @YOUR_GITHUB_USERNAME
+/config/ @YOUR_GITHUB_USERNAME
+mix.exs @YOUR_GITHUB_USERNAME
+.formatter.exs @YOUR_GITHUB_USERNAME
+Makefile @YOUR_GITHUB_USERNAME
+
+# Core apps
+/apps/pulse_core/ @YOUR_GITHUB_USERNAME
+/apps/labs_* @YOUR_GITHUB_USERNAME
+
+# Operations
+/ops/ @YOUR_GITHUB_USERNAME
+/observability/ @YOUR_GITHUB_USERNAME
+
+# Tools
+/tools/ @YOUR_GITHUB_USERNAME
+
+# CTO docs
+/docs/cto/ @YOUR_GITHUB_USERNAME
+
+# Security-sensitive
+/docs/security/ @YOUR_GITHUB_USERNAME
+.github/workflows/ci.yml @YOUR_GITHUB_USERNAME

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  node1:
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+    container_name: elixir_systems_node1
+    hostname: node1
+    environment:
+      - NODE_NAME=node1@node1
+      - COOKIE=secret_cookie
+      - CLUSTER_STRATEGY=epmd
+    ports:
+      - "4000:4000"
+    networks:
+      - cluster_net
+    depends_on:
+      - postgres
+
+  node2:
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+    container_name: elixir_systems_node2
+    hostname: node2
+    environment:
+      - NODE_NAME=node2@node2
+      - COOKIE=secret_cookie
+      - CLUSTER_STRATEGY=epmd
+    ports:
+      - "4001:4000"
+    networks:
+      - cluster_net
+    depends_on:
+      - postgres
+
+  node3:
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+    container_name: elixir_systems_node3
+    hostname: node3
+    environment:
+      - NODE_NAME=node3@node3
+      - COOKIE=secret_cookie
+      - CLUSTER_STRATEGY=epmd
+    ports:
+      - "4002:4000"
+    networks:
+      - cluster_net
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: elixir_systems_cluster_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: elixir_systems_cluster
+    networks:
+      - cluster_net
+
+networks:
+  cluster_net:
+    driver: bridge

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+    container_name: elixir_systems_app
+    environment:
+      - DATABASE_URL=ecto://postgres:postgres@postgres:5432/elixir_systems_prod
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - PHX_HOST=${PHX_HOST:-localhost}
+      - PORT=4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app_net
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: elixir_systems_prod_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: elixir_systems_prod
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: elixir_systems_prometheus
+    volumes:
+      - ../observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - app_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: elixir_systems_grafana
+    volumes:
+      - ../observability/grafana:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    networks:
+      - app_net
+    depends_on:
+      - prometheus
+
+networks:
+  app_net:
+    driver: bridge
+
+volumes:
+  postgres_prod_data:
+  prometheus_data:
+  grafana_data:
