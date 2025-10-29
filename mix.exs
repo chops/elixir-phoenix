@@ -30,10 +30,12 @@ defmodule ElixirSystemsMastery.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run apps/pulse_data/priv/repo/seeds.exs"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      setup: ["deps.get"],
+      # Uncomment when Ecto is added in Phase 5:
+      # "ecto.setup": ["ecto.create", "ecto.migrate", "run apps/pulse_data/priv/repo/seeds.exs"],
+      # "ecto.reset": ["ecto.drop", "ecto.setup"],
+      # test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      test: ["test"],
       fmt: ["format"]
     ]
   end

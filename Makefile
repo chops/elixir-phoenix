@@ -5,7 +5,7 @@ help: ## Show this help
 
 setup: ## Install dependencies and set up the project
 	mix deps.get
-	mix ecto.setup
+	# mix ecto.setup  # Uncomment in Phase 5 when Ecto is added
 
 deps: ## Fetch dependencies
 	mix deps.get

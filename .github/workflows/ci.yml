@@ -73,7 +73,6 @@ jobs:
 
       - name: Run Credo
         run: mix credo --strict
-        continue-on-error: true
 
   dialyzer:
     name: Dialyzer
@@ -102,4 +101,3 @@ jobs:
 
       - name: Run Dialyzer
         run: mix dialyzer
-        continue-on-error: true
