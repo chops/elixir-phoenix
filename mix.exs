@@ -8,7 +8,15 @@ defmodule ElixirSystemsMastery.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      releases: releases()
+      releases: releases(),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test
+      ]
     ]
   end
 
@@ -21,6 +29,7 @@ defmodule ElixirSystemsMastery.MixProject do
       {:sobelow, "~> 0.13", only: :dev, runtime: false},
       {:mix_audit, "~> 2.1", only: :dev, runtime: false},
       {:benchee, "~> 1.3", only: :dev},
+      {:excoveralls, "~> 0.18", only: :test},
       {:stream_data, "~> 0.6", only: :test},
       {:mox, "~> 1.1", only: :test},
       {:opentelemetry, "~> 1.4"},

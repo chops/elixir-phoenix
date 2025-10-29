@@ -14,9 +14,8 @@ export const options = {
     { duration: '2m', target: 0 },   // ramp down to 0 users
   ],
   thresholds: {
-    errors: ['rate<0.05'],              // error rate must be less than 5%
-    http_req_duration: ['p(95)<1000'],  // 95% of requests must complete below 1s
-    http_req_duration: ['p(99)<2000'],  // 99% of requests must complete below 2s
+    errors: ['rate<0.05'],                                 // error rate must be less than 5%
+    http_req_duration: ['p(95)<1000', 'p(99)<2000'],      // 95% < 1s, 99% < 2s
   },
 };
 

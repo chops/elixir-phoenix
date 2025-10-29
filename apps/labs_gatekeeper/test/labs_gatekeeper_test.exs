@@ -27,4 +27,22 @@ defmodule LabsGatekeeperTest do
       assert :tests in gates
     end
   end
+
+  describe "CI validation" do
+    @tag :tmp_failing_test
+    @tag :skip
+    test "TEMPORARY: This test intentionally fails to prove CI catches failures" do
+      # This test is designed to fail when unskipped.
+      # To prove CI works:
+      # 1. Remove @tag :skip from this test
+      # 2. Commit and push
+      # 3. Watch CI fail (as expected)
+      # 4. Re-add @tag :skip
+      # 5. Commit and push again
+      # 6. Watch CI pass
+      #
+      # This proves the CI pipeline correctly identifies and reports test failures.
+      assert 1 + 1 == 3, "This assertion is intentionally false to validate CI"
+    end
+  end
 end
