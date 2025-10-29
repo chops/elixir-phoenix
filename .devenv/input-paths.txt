@@ -1,0 +1,7 @@
+/home/nixos/src/elixir-phoenix/.devenv/flake.json
+/home/nixos/src/elixir-phoenix/.devenv.flake.nix
+/home/nixos/src/elixir-phoenix/.env
+/home/nixos/src/elixir-phoenix/devenv.local.nix
+/home/nixos/src/elixir-phoenix/devenv.lock
+/home/nixos/src/elixir-phoenix/devenv.nix
+/home/nixos/src/elixir-phoenix/devenv.yaml
