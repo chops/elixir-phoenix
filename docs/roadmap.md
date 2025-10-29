@@ -21,6 +21,7 @@ A comprehensive learning path from tooling to production operations, organized i
 | **Phase 12** | Delivery & ops | [phase-12-delivery.md](reading/phase-12-delivery.md) | `labs_release_runner` |
 | **Phase 13** | Capstone integration | [phase-13-capstone.md](reading/phase-13-capstone.md) | Full system integration |
 | **Phase 14** | CTO track | [phase-14-cto.md](reading/phase-14-cto.md) | Security & ops practice |
+| **Phase 15** | AI/ML Integration | [phase-15-ai-ml.md](reading/phase-15-ai-ml.md) | `labs_ai_classifier`, `pulse_ai_recommender` |
 
 ---
 
@@ -43,6 +44,7 @@ A comprehensive learning path from tooling to production operations, organized i
 | M12   | labs_release_runner | releases for pulse   | health/readiness, graceful rollout           |
 | M13   | — integrate         | full pulse stack     | gameday: kill nodes, spike, recover          |
 | M14   | labs_incident_cli   | ops docs             | drills and runbooks as code                  |
+| M15   | labs_ai_classifier  | pulse_ai_recommender | Nx/Axon/Bumblebee integration, serving models |
 
 ---
 
@@ -74,6 +76,65 @@ Open one PR per phase titled **Reading: Phase N** with a summary and links to ap
 - [ ] Phase 12: Delivery & ops
 - [ ] Phase 13: Capstone integration
 - [ ] Phase 14: CTO track
+- [ ] Phase 15: AI/ML Integration
+
+---
+
+## Phase Details
+
+### Phase 0 — Tooling Foundation
+
+**Mastery Definition:** You can enforce repository-wide CI quality gates for an Elixir umbrella. Format, Credo, Dialyzer, Sobelow, and mix_audit all run locally and in CI, and any violation fails the build. CI is wired with a job matrix. Acceptance is "make check" green on CI.
+
+**Learning Objectives:**
+- Add CI gates for format, credo, dialyzer, sobelow, and deps audit
+- Provide Makefile targets that compose these checks
+- Bootstrap a CI workflow and matrix for OTP/Elixir versions
+- Scaffold docs and an ADR template for decisions
+
+**Apps to Build:**
+
+**Labs App:** `labs_gatekeeper`
+- **Scope:** CI + quality bars for an umbrella repo
+- **Key Features:**
+  - GitHub Actions pipeline runs format, credo --strict, dialyzer, sobelow --exit, mix deps.audit
+  - Makefile with check target that aggregates gates
+  - ADR template and docs scaffold committed
+- **Success Criteria:**
+  - [ ] Build fails on any gate violation
+  - [ ] `make check` is green on CI
+
+**Pulse Feature:** repo gates
+- **Integration:** Apply the same CI gates to the PulseShop product from the start
+- **Dependencies:** None
+- **Success Criteria:**
+  - [ ] Pulse repos use the shared CI workflow and pass all gates
+  - [ ] First Pulse milestone initialized under CI
+
+**Why This Proves Mastery:** This phase proves repository hygiene and the ability to codify non-negotiable quality bars. It isolates the leverage point for all later phases; the tiny app exists only to enforce these invariants.
+
+**Time Estimate:**
+- Reading: 0.5 days
+- Labs Implementation: 1–1.5 days
+- Pulse Integration: 0.5–1 day
+- **Total: 2–3 days**
+
+**Prerequisites:**
+- [ ] Elixir installed (no other prerequisites)
+
+**Deliverables:**
+- [ ] Reading notes in `docs/reading/phase-00-tooling.md`
+- [ ] Labs app with tests (>80% coverage)
+- [ ] Pulse feature integrated (repo gates)
+- [ ] ADR documenting key design decisions
+- [ ] Demo script or video
+
+**References:**
+- Phase 0 docs list: Credo, Dialyxir, mix_audit, Sobelow
+- Minimal Makefile targets: fmt, credo, dialyzer, audit, sobelow, test
+- CI matrix and workflow starter
+
+> **Note:** Other phases (1-15) will follow a similar detailed format. Template structure established with Phase 0.
 
 ---
 
