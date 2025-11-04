@@ -10,7 +10,7 @@ None.
   https://elixir-lang.org/ and https://elixir-lang.org/getting-started/introduction.html
 
 - **Credo overview and usage**
-  https://hexdocs.pm/credo/readme.html
+  https://hexdocs.pm/credo/overview.html
 
 - **Dialyxir tasks and "explain"**
   https://hexdocs.pm/dialyxir/readme.html
