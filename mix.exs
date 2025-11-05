@@ -24,10 +24,10 @@ defmodule ElixirSystemsMastery.MixProject do
     [
       # Dev/test tools
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
-      {:sobelow, "~> 0.13", only: :dev, runtime: false},
-      {:mix_audit, "~> 2.1", only: :dev, runtime: false},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:benchee, "~> 1.3", only: :dev},
       {:excoveralls, "~> 0.18", only: :test},
       {:stream_data, "~> 0.6", only: :test},
