@@ -2,12 +2,12 @@
   inputs =
     let
       version = "1.8.2";
-system = "aarch64-linux";
-devenv_root = "/home/nixos/src/elixir-phoenix";
-devenv_dotfile = "/home/nixos/src/elixir-phoenix/.devenv";
+system = "x86_64-linux";
+devenv_root = "/home/chops/src/elixir-phoenix";
+devenv_dotfile = "/home/chops/src/elixir-phoenix/.devenv";
 devenv_dotfile_path = ./.devenv;
 devenv_tmpdir = "/run/user/1000";
-devenv_runtime = "/run/user/1000/devenv-f3dcfb8";
+devenv_runtime = "/run/user/1000/devenv-38fef73";
 devenv_istesting = false;
 devenv_direnvrc_latest_version = 1;
 container_name = null;
@@ -25,12 +25,12 @@ container_name = null;
       outputs = { nixpkgs, ... }@inputs:
         let
           version = "1.8.2";
-system = "aarch64-linux";
-devenv_root = "/home/nixos/src/elixir-phoenix";
-devenv_dotfile = "/home/nixos/src/elixir-phoenix/.devenv";
+system = "x86_64-linux";
+devenv_root = "/home/chops/src/elixir-phoenix";
+devenv_dotfile = "/home/chops/src/elixir-phoenix/.devenv";
 devenv_dotfile_path = ./.devenv;
 devenv_tmpdir = "/run/user/1000";
-devenv_runtime = "/run/user/1000/devenv-f3dcfb8";
+devenv_runtime = "/run/user/1000/devenv-38fef73";
 devenv_istesting = false;
 devenv_direnvrc_latest_version = 1;
 container_name = null;
