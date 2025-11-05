@@ -69,7 +69,16 @@ jobs:
         run: mix format --check-formatted
 
       - name: Run tests with coverage
-        run: mix coveralls.json --warnings-as-errors
+        run: |
+          mix coveralls.json --umbrella --warnings-as-errors | tee coverage_output.txt
+          # Extract coverage from output like "[TOTAL] 100.0%"
+          COVERAGE=$(grep "\[TOTAL\]" coverage_output.txt | awk '{print $2}' | tr -d '%' | cut -d'.' -f1)
+          echo "Coverage: ${COVERAGE}%"
+          if [ ${COVERAGE} -lt 80 ]; then
+            echo "❌ Coverage ${COVERAGE}% is below 80% threshold"
+            exit 1
+          fi
+          echo "✓ Coverage ${COVERAGE}% meets 80% threshold"
         env:
           MIX_ENV: test
 
@@ -80,16 +89,6 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-
-      - name: Check coverage threshold
-        run: |
-          COVERAGE=$(jq -r '.coverage | tonumber | floor' cover/excoveralls.json)
-          echo "Coverage: ${COVERAGE}%"
-          if [ ${COVERAGE} -lt 80 ]; then
-            echo "❌ Coverage ${COVERAGE}% is below 80% threshold"
-            exit 1
-          fi
-          echo "✓ Coverage ${COVERAGE}% meets 80% threshold"
 
       - name: Run Credo
         run: mix credo --strict

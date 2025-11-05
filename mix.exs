@@ -9,7 +9,10 @@ defmodule ElixirSystemsMastery.MixProject do
       deps: deps(),
       aliases: aliases(),
       releases: releases(),
-      test_coverage: [tool: ExCoveralls],
+      test_coverage: [
+        tool: ExCoveralls,
+        export: "cov"
+      ],
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.detail": :test,
