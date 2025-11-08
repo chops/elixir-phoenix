@@ -1,0 +1,425 @@
+# Tagged Tuples & Error Handling
+
+## Learning Objectives
+
+By the end of this checkpoint, you will:
+
+* Use tagged tuples instead of exceptions for expected errors
+* Build `with` chains for success-path operations
+* Handle all error cases in the `else` clause
+* Keep return shapes consistent (`{:ok, _} | {:error, _}`)
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Setup
+
+```elixir
+Mix.install([])
+```
+
+## Concept: The Elixir Way of Error Handling
+
+In Elixir, we distinguish between:
+
+* **Expected errors**: Use tagged tuples (`{:ok, result}` or `{:error, reason}`)
+* **Unexpected errors**: Use exceptions (raise, throw, exit)
+
+```elixir
+# Good: Expected errors use tagged tuples
+defmodule UserStore do
+  @users %{
+    1 => %{id: 1, name: "Alice"},
+    2 => %{id: 2, name: "Bob"}
+  }
+
+  def get_user(id) do
+    case Map.get(@users, id) do
+      nil -> {:error, :not_found}
+      user -> {:ok, user}
+    end
+  end
+end
+
+# Usage: Pattern match on the result
+case UserStore.get_user(1) do
+  {:ok, user} -> IO.puts("Found: #{user.name}")
+  {:error, :not_found} -> IO.puts("User not found")
+end
+
+case UserStore.get_user(999) do
+  {:ok, user} -> IO.puts("Found: #{user.name}")
+  {:error, :not_found} -> IO.puts("User not found")
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Why Tagged Tuples?
+
+Compare exception-based code with tagged tuples:
+
+```elixir
+defmodule ComparisonExample do
+  # Exception-based (NOT idiomatic Elixir)
+  defmodule WithExceptions do
+    def divide!(a, b) do
+      if b == 0 do
+        raise ArgumentError, "Cannot divide by zero"
+      else
+        a / b
+      end
+    end
+  end
+
+  # Tagged tuples (idiomatic Elixir)
+  defmodule WithTuples do
+    def divide(a, b) do
+      if b == 0 do
+        {:error, :zero_division}
+      else
+        {:ok, a / b}
+      end
+    end
+  end
+end
+
+# Exception approach requires try/rescue
+try do
+  ComparisonExample.WithExceptions.divide!(10, 0)
+rescue
+  e in ArgumentError -> IO.puts("Caught: #{e.message}")
+end
+
+# Tagged tuple approach uses pattern matching
+case ComparisonExample.WithTuples.divide(10, 0) do
+  {:ok, result} -> IO.puts("Result: #{result}")
+  {:error, :zero_division} -> IO.puts("Error: Cannot divide by zero")
+end
+```
+
+**Benefits of tagged tuples:**
+
+* Explicit in the function signature
+* Composable with pattern matching
+* No hidden control flow
+* Type dialyzer can check them
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 4.1: Convert Exceptions to Tagged Tuples
+
+Refactor this exception-based code:
+
+```elixir
+defmodule UserFinder do
+  @users %{
+    1 => %{id: 1, name: "Alice", email: "alice@example.com"},
+    2 => %{id: 2, name: "Bob", email: "bob@example.com"}
+  }
+
+  # Exception-based version (avoid this!)
+  def find_bang!(id) do
+    case Map.get(@users, id) do
+      nil -> raise "User not found"
+      user -> user
+    end
+  end
+
+  # Tagged tuple version (implement this!)
+  def find(id) do
+    case Map.get(@users, id) do
+      nil -> {:error, :not_found}
+      user -> {:ok, user}
+    end
+  end
+end
+
+# Test the tagged tuple version
+case UserFinder.find(1) do
+  {:ok, user} -> IO.puts("✅ Found user: #{user.name}")
+  {:error, :not_found} -> IO.puts("❌ User not found")
+end
+
+case UserFinder.find(999) do
+  {:ok, user} -> IO.puts("✅ Found user: #{user.name}")
+  {:error, :not_found} -> IO.puts("❌ User not found")
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Concept: The `with` Statement
+
+When you have multiple operations that can fail, `with` provides clean composition:
+
+```elixir
+defmodule PaymentProcessor do
+  def process_payment(user_id, amount) do
+    with {:ok, user} <- fetch_user(user_id),
+         {:ok, account} <- fetch_account(user),
+         {:ok, _txn} <- charge_account(account, amount),
+         {:ok, _receipt} <- send_receipt(user) do
+      {:ok, :payment_successful}
+    else
+      {:error, :user_not_found} -> {:error, :invalid_user}
+      {:error, :account_not_found} -> {:error, :no_account}
+      {:error, :insufficient_funds} -> {:error, :payment_failed}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Simulated helper functions
+  defp fetch_user(1), do: {:ok, %{id: 1, name: "Alice"}}
+  defp fetch_user(_), do: {:error, :user_not_found}
+
+  defp fetch_account(%{id: 1}), do: {:ok, %{balance: 100}}
+  defp fetch_account(_), do: {:error, :account_not_found}
+
+  defp charge_account(%{balance: balance}, amount) when balance >= amount do
+    {:ok, %{amount: amount, new_balance: balance - amount}}
+  end
+
+  defp charge_account(_, _), do: {:error, :insufficient_funds}
+
+  defp send_receipt(_user), do: {:ok, :receipt_sent}
+end
+
+# Test successful payment
+IO.inspect(PaymentProcessor.process_payment(1, 50), label: "Payment $50")
+
+# Test insufficient funds
+IO.inspect(PaymentProcessor.process_payment(1, 150), label: "Payment $150")
+
+# Test invalid user
+IO.inspect(PaymentProcessor.process_payment(999, 50), label: "Payment invalid user")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 4.2: Build a with Pipeline
+
+Complete this user registration flow:
+
+```elixir
+defmodule UserRegistration do
+  def register(params) do
+    with {:ok, validated} <- validate_params(params),
+         {:ok, _available} <- check_email_available(validated.email),
+         {:ok, user} <- create_user(validated),
+         {:ok, _sent} <- send_welcome_email(user) do
+      {:ok, user}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Helper functions
+  defp validate_params(%{email: email, name: name}) when is_binary(email) and is_binary(name) do
+    if String.contains?(email, "@") do
+      {:ok, %{email: email, name: name}}
+    else
+      {:error, :invalid_email}
+    end
+  end
+
+  defp validate_params(_), do: {:error, :invalid_params}
+
+  defp check_email_available(email) do
+    # Simulate checking database
+    if email == "taken@example.com" do
+      {:error, :email_taken}
+    else
+      {:ok, :available}
+    end
+  end
+
+  defp create_user(params) do
+    user = Map.put(params, :id, :rand.uniform(1000))
+    {:ok, user}
+  end
+
+  defp send_welcome_email(_user) do
+    # Simulate email sending
+    {:ok, :sent}
+  end
+end
+
+# Test successful registration
+result1 = UserRegistration.register(%{email: "new@example.com", name: "Alice"})
+IO.inspect(result1, label: "New user registration")
+
+# Test email taken
+result2 = UserRegistration.register(%{email: "taken@example.com", name: "Bob"})
+IO.inspect(result2, label: "Email already taken")
+
+# Test invalid email
+result3 = UserRegistration.register(%{email: "invalid-email", name: "Charlie"})
+IO.inspect(result3, label: "Invalid email")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 4.3: Find the Bug
+
+This code has a subtle bug. Can you spot it?
+
+```elixir
+defmodule BuggyOrderProcessor do
+  def process_order(order_id) do
+    with {:ok, order} <- fetch_order(order_id),
+         {:ok, _payment} <- process_payment(order),
+         {:ok, _inventory} <- reserve_inventory(order),
+         :ok <- notify_customer(order) do
+      {:ok, order}
+    else
+      err -> err
+    end
+  end
+
+  defp fetch_order(1), do: {:ok, %{id: 1, amount: 100}}
+  defp fetch_order(_), do: {:error, :order_not_found}
+
+  defp process_payment(_order), do: {:ok, :payment_processed}
+  defp reserve_inventory(_order), do: {:ok, :reserved}
+
+  # Bug: This returns :ok instead of {:ok, _}
+  defp notify_customer(_order), do: :ok
+end
+
+# This will cause a WithClauseError!
+try do
+  BuggyOrderProcessor.process_order(1)
+rescue
+  e in WithClauseError ->
+    IO.puts("❌ Bug found!")
+    IO.puts("Error: #{inspect(e)}")
+    IO.puts("\nProblem: notify_customer/1 returns :ok, not {:ok, _}")
+    IO.puts("The else clause only handles {:error, _} patterns")
+end
+```
+
+**The Fix:**
+
+```elixir
+defmodule FixedOrderProcessor do
+  def process_order(order_id) do
+    with {:ok, order} <- fetch_order(order_id),
+         {:ok, _payment} <- process_payment(order),
+         {:ok, _inventory} <- reserve_inventory(order),
+         {:ok, _notification} <- notify_customer(order) do
+      {:ok, order}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp fetch_order(1), do: {:ok, %{id: 1, amount: 100}}
+  defp fetch_order(_), do: {:error, :order_not_found}
+
+  defp process_payment(_order), do: {:ok, :payment_processed}
+  defp reserve_inventory(_order), do: {:ok, :reserved}
+
+  # Fixed: Now returns {:ok, _}
+  defp notify_customer(_order), do: {:ok, :notified}
+end
+
+# Test the fixed version
+IO.inspect(FixedOrderProcessor.process_order(1), label: "✅ Fixed version")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Pattern: Railway-Oriented Programming
+
+The `with` statement implements "railway-oriented programming" - stay on the success track or switch to the error track:
+
+```elixir
+defmodule RailwayExample do
+  def happy_path(input) do
+    input
+    |> step1()
+    |> then(fn
+      {:ok, v} -> step2(v)
+      error -> error
+    end)
+    |> then(fn
+      {:ok, v} -> step3(v)
+      error -> error
+    end)
+  end
+
+  def with_statement(input) do
+    with {:ok, v1} <- step1(input),
+         {:ok, v2} <- step2(v1),
+         {:ok, v3} <- step3(v2) do
+      {:ok, v3}
+    end
+  end
+
+  defp step1(x) when x > 0, do: {:ok, x * 2}
+  defp step1(_), do: {:error, :step1_failed}
+
+  defp step2(x) when x < 100, do: {:ok, x + 10}
+  defp step2(_), do: {:error, :step2_failed}
+
+  defp step3(x), do: {:ok, x * 3}
+end
+
+IO.inspect(RailwayExample.with_statement(5), label: "Success path")
+IO.inspect(RailwayExample.with_statement(-5), label: "Fail at step 1")
+IO.inspect(RailwayExample.with_statement(50), label: "Fail at step 2")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Self-Assessment
+
+```elixir
+form = Kino.Control.form(
+  [
+    tagged_tuples: {:checkbox, "I use tagged tuples for expected errors"},
+    with_chains: {:checkbox, "I can build with chains for success-path operations"},
+    else_clause: {:checkbox, "I handle all error cases in the else clause"},
+    consistent_returns: {:checkbox, "I keep return shapes consistent"},
+    no_exceptions: {:checkbox, "I avoid exceptions for control flow"}
+  ],
+  submit: "Check Progress"
+)
+
+Kino.render(form)
+
+Kino.listen(form, fn event ->
+  completed = event.data |> Map.values() |> Enum.count(& &1)
+  total = map_size(event.data)
+
+  progress_message =
+    if completed == total do
+      "🎉 Excellent! You've mastered Checkpoint 4!"
+    else
+      "Keep going! #{completed}/#{total} objectives complete"
+    end
+
+  Kino.Markdown.new("### Progress: #{progress_message}") |> Kino.render()
+end)
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Key Takeaways
+
+* Use **tagged tuples** (`{:ok, _}` / `{:error, _}`) for expected errors
+* Use **exceptions** only for truly unexpected situations
+* The **with** statement chains success-path operations cleanly
+* Always handle **all patterns** in the else clause
+* Keep return types **consistent** across your API
+* Pattern matching makes error handling **explicit**
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Next Steps
+
+Great progress! Continue to the next checkpoint:
+
+**[Continue to Checkpoint 5: Property-Based Testing →](05-property-testing.livemd)**
+
+Or return to [Checkpoint 3: Enum vs Stream](03-enum-stream.livemd)

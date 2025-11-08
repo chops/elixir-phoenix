@@ -36,7 +36,11 @@ defmodule ElixirSystemsMastery.MixProject do
       {:stream_data, "~> 0.6", only: :test},
       {:mox, "~> 1.1", only: :test},
       {:opentelemetry, "~> 1.4"},
-      {:opentelemetry_exporter, "~> 1.7"}
+      {:opentelemetry_exporter, "~> 1.7"},
+      # Livebook dependencies
+      {:kino, "~> 0.12"},
+      {:kino_vega_lite, "~> 0.1"},
+      {:kino_db, "~> 0.2"}
     ]
   end
 

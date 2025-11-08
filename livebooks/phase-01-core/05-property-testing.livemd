@@ -1,0 +1,441 @@
+# Property-Based Testing
+
+## Learning Objectives
+
+By the end of this checkpoint, you will:
+
+* Identify invariant properties of functions
+* Write property tests using StreamData
+* Understand how property tests find edge cases
+* Prefer property tests over example-based tests when appropriate
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Setup
+
+```elixir
+Mix.install([
+  {:stream_data, "~> 0.6"}
+])
+```
+
+## Concept: Example-Based vs Property-Based Testing
+
+**Example-based testing** checks specific inputs:
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule MathTest do
+  use ExUnit.Case
+
+  # Example-based tests
+  test "reverse twice returns original" do
+    assert Enum.reverse([1, 2, 3]) |> Enum.reverse() == [1, 2, 3]
+    assert Enum.reverse([]) |> Enum.reverse() == []
+    assert Enum.reverse([1]) |> Enum.reverse() == [1]
+  end
+end
+
+ExUnit.run()
+```
+
+**Property-based testing** checks properties that hold for ALL inputs:
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule PropertyTest do
+  use ExUnit.Case
+  use ExUnitProperties
+
+  # Property-based test - runs 100 times with random data!
+  property "reverse twice returns original" do
+    check all list <- list_of(integer()) do
+      assert Enum.reverse(list) |> Enum.reverse() == list
+    end
+  end
+end
+
+ExUnit.run()
+```
+
+The property test generates 100 different random lists and verifies the property holds!
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 5.1: Identify Properties
+
+For each function, what property should always be true?
+
+```elixir
+# Property: reverse(reverse(list)) == list
+# This is called "involution"
+test_reverse = fn ->
+  list = Enum.random([[], [1], [1, 2, 3], 1..100 |> Enum.to_list()])
+  list == Enum.reverse(Enum.reverse(list))
+end
+
+IO.puts("Reverse property: #{test_reverse.()}")
+
+# Property: length(map(list, f)) == length(list)
+# Mapping preserves length
+test_map_length = fn ->
+  list = Enum.random([[], [1], [1, 2, 3, 4, 5]])
+  Enum.length(Enum.map(list, & &1)) == Enum.length(list)
+end
+
+IO.puts("Map length property: #{test_map_length.()}")
+
+# Property: downcase(upcase(string)) == downcase(string)
+# Idempotence after normalization
+test_case = fn ->
+  string = Enum.random(["hello", "WORLD", "MiXeD"])
+  downcased = String.downcase(string)
+  String.downcase(String.upcase(downcased)) == downcased
+end
+
+IO.puts("Case property: #{test_case.()}")
+
+# Property: Every element in sort(list) is <= next element
+# Ordering property
+test_sorted = fn ->
+  list = Enum.random([[3, 1, 2], [5, 5, 5], [1]])
+  sorted = Enum.sort(list)
+
+  sorted
+  |> Enum.chunk_every(2, 1, :discard)
+  |> Enum.all?(fn [a, b] -> a <= b end)
+end
+
+IO.puts("Sort property: #{test_sorted.()}")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 5.2: Your First Property Test
+
+Let's write property tests for a custom list length function:
+
+```elixir
+defmodule MyList do
+  def length(list), do: do_length(list, 0)
+
+  defp do_length([], acc), do: acc
+  defp do_length([_ | t], acc), do: do_length(t, acc + 1)
+end
+```
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule MyListTest do
+  use ExUnit.Case
+  use ExUnitProperties
+
+  property "length is always non-negative" do
+    check all list <- list_of(integer()) do
+      length = MyList.length(list)
+      assert length >= 0
+    end
+  end
+
+  property "length of concatenated lists equals sum of lengths" do
+    check all list1 <- list_of(integer()),
+              list2 <- list_of(integer()) do
+      combined = list1 ++ list2
+      assert MyList.length(combined) == MyList.length(list1) + MyList.length(list2)
+    end
+  end
+
+  property "empty list has length zero" do
+    check all _anything <- integer() do
+      assert MyList.length([]) == 0
+    end
+  end
+end
+
+ExUnit.run()
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 5.3: Property Test for Caesar Cipher
+
+Let's implement and test a Caesar cipher:
+
+```elixir
+defmodule Caesar do
+  @doc """
+  Encodes a string using Caesar cipher with given shift.
+  Only shifts lowercase letters a-z.
+  """
+  def encode(text, shift) do
+    text
+    |> String.to_charlist()
+    |> Enum.map(&shift_char(&1, shift))
+    |> List.to_string()
+  end
+
+  def decode(text, shift) do
+    encode(text, -shift)
+  end
+
+  defp shift_char(char, shift) when char >= ?a and char <= ?z do
+    # Normalize to 0-25, add shift, modulo 26, convert back
+    shifted = rem(char - ?a + shift, 26)
+
+    # Handle negative modulo
+    shifted = if shifted < 0, do: shifted + 26, else: shifted
+    shifted + ?a
+  end
+
+  defp shift_char(char, _shift), do: char
+end
+
+# Test manually first
+IO.puts("Encode 'hello' with shift 3: #{Caesar.encode("hello", 3)}")
+IO.puts("Decode 'khoor' with shift 3: #{Caesar.decode("khoor", 3)}")
+```
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule CaesarTest do
+  use ExUnit.Case
+  use ExUnitProperties
+
+  property "encoding then decoding returns original" do
+    check all text <- string(:alphanumeric),
+              shift <- integer(-100..100) do
+      # Filter to only lowercase letters and spaces
+      text = String.downcase(text)
+      encoded = Caesar.encode(text, shift)
+      decoded = Caesar.decode(encoded, shift)
+      assert decoded == text
+    end
+  end
+
+  property "encoding with 0 shift returns original" do
+    check all text <- string(:alphanumeric) do
+      text = String.downcase(text)
+      assert Caesar.encode(text, 0) == text
+    end
+  end
+
+  property "encoding with 26 shift returns original (for a-z)" do
+    check all text <- string(:alphanumeric) do
+      text = String.downcase(text)
+      assert Caesar.encode(text, 26) == text
+    end
+  end
+end
+
+ExUnit.run()
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Advanced: Generators
+
+StreamData provides many generators:
+
+```elixir
+require ExUnitProperties
+
+# Generate and inspect some data
+IO.puts("=== Generated Integers ===")
+
+ExUnitProperties.gen(all x <- StreamData.integer())
+|> Enum.take(5)
+|> IO.inspect(label: "Random integers")
+
+IO.puts("\n=== Generated Lists ===")
+
+ExUnitProperties.gen(all list <- StreamData.list_of(StreamData.integer(), min_length: 2, max_length: 5))
+|> Enum.take(3)
+|> IO.inspect(label: "Random lists")
+
+IO.puts("\n=== Generated Maps ===")
+
+ExUnitProperties.gen(
+  all name <- StreamData.string(:alphanumeric),
+      age <- StreamData.integer(1..100) do
+    %{name: name, age: age}
+  end
+)
+|> Enum.take(3)
+|> IO.inspect(label: "Random user maps")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Real-World Example: Testing a Key-Value Store
+
+```elixir
+defmodule SimpleKV do
+  def new, do: %{}
+
+  def put(store, key, value) do
+    Map.put(store, key, value)
+  end
+
+  def get(store, key) do
+    Map.get(store, key)
+  end
+
+  def delete(store, key) do
+    Map.delete(store, key)
+  end
+end
+```
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule SimpleKVTest do
+  use ExUnit.Case
+  use ExUnitProperties
+
+  property "getting a key that was just put returns that value" do
+    check all key <- term(),
+              value <- term() do
+      store =
+        SimpleKV.new()
+        |> SimpleKV.put(key, value)
+
+      assert SimpleKV.get(store, key) == value
+    end
+  end
+
+  property "deleting a key makes it return nil" do
+    check all key <- term(),
+              value <- term() do
+      store =
+        SimpleKV.new()
+        |> SimpleKV.put(key, value)
+        |> SimpleKV.delete(key)
+
+      assert SimpleKV.get(store, key) == nil
+    end
+  end
+
+  property "putting same key twice keeps last value" do
+    check all key <- term(),
+              value1 <- term(),
+              value2 <- term() do
+      store =
+        SimpleKV.new()
+        |> SimpleKV.put(key, value1)
+        |> SimpleKV.put(key, value2)
+
+      assert SimpleKV.get(store, key) == value2
+    end
+  end
+end
+
+ExUnit.run()
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Finding Bugs with Property Tests
+
+Property tests are excellent at finding edge cases:
+
+```elixir
+# Buggy implementation of unique
+defmodule BuggyList do
+  # Bug: doesn't handle duplicates at end of list correctly
+  def unique([]), do: []
+  def unique([h | t]), do: [h | unique(Enum.filter(t, &(&1 != h)))]
+end
+
+# This looks correct with examples...
+IO.inspect(BuggyList.unique([1, 2, 3]), label: "Test 1")
+IO.inspect(BuggyList.unique([1, 1, 2]), label: "Test 2")
+
+# But property test will find the bug!
+ExUnit.start(auto_run: false)
+
+defmodule BuggyListTest do
+  use ExUnit.Case
+  use ExUnitProperties
+
+  property "unique preserves order and removes duplicates" do
+    check all list <- list_of(integer()) do
+      result = BuggyList.unique(list)
+
+      # Property 1: No duplicates
+      assert length(result) == length(Enum.uniq(result))
+
+      # Property 2: All elements from original are present
+      assert Enum.all?(result, &(&1 in list))
+
+      # Property 3: Same as Enum.uniq
+      assert result == Enum.uniq(list)
+    end
+  end
+end
+
+# Run the test - it should pass (the bug is subtle!)
+ExUnit.run()
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Self-Assessment
+
+```elixir
+form = Kino.Control.form(
+  [
+    identify_properties: {:checkbox, "I can identify invariant properties of functions"},
+    write_property_tests: {:checkbox, "I can write property tests using StreamData"},
+    edge_cases: {:checkbox, "I understand how property tests find edge cases"},
+    prefer_properties: {:checkbox, "I prefer property tests when appropriate"},
+    generators: {:checkbox, "I can use different StreamData generators"}
+  ],
+  submit: "Check Progress"
+)
+
+Kino.render(form)
+
+Kino.listen(form, fn event ->
+  completed = event.data |> Map.values() |> Enum.count(& &1)
+  total = map_size(event.data)
+
+  progress_message =
+    if completed == total do
+      "🎉 Excellent! You've mastered Checkpoint 5!"
+    else
+      "Keep going! #{completed}/#{total} objectives complete"
+    end
+
+  Kino.Markdown.new("### Progress: #{progress_message}") |> Kino.render()
+end)
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Key Takeaways
+
+* **Property tests** verify invariants for ALL inputs
+* **Example tests** verify specific cases
+* StreamData **generates** random test data
+* Property tests **find edge cases** you didn't think of
+* Good properties to test:
+  * Idempotence: `f(f(x)) == f(x)`
+  * Involution: `f(f(x)) == x`
+  * Invariants: "length never changes", "output is sorted"
+  * Inverse functions: `decode(encode(x)) == x`
+* Use **both** example and property tests!
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Next Steps
+
+Excellent work! Continue to the next checkpoint:
+
+**[Continue to Checkpoint 6: Pipe Operator & Data Structures →](06-pipe-operator.livemd)**
+
+Or return to [Checkpoint 4: Error Handling](04-error-handling.livemd)

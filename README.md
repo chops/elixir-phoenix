@@ -54,6 +54,31 @@ make db-up
 make fmt
 ```
 
+## 📓 Getting Started with Livebook
+
+Interactive learning notebooks are available in `livebooks/`.
+
+```bash
+# Install dependencies (includes Kino for Livebook)
+mix deps.get
+
+# Start Livebook server
+make livebook
+
+# Open your browser to http://localhost:8080
+# Navigate to setup.livemd to begin
+```
+
+**What's in Livebook?**
+
+- **Interactive exercises** - Run code directly in your browser
+- **7 Phase 1 checkpoints** - Pattern matching, recursion, Enum/Stream, error handling, property testing, and more
+- **Progress tracking** - Monitor your completion across all 15 phases
+- **Visualizations** - See benchmarks and performance comparisons
+- **Self-assessments** - Check your understanding at each step
+
+See `livebooks/README.md` for more details.
+
 ## 📚 Documentation
 
 - **[Roadmap](docs/roadmap.md)** - Learning phases and milestones
