@@ -1,0 +1,458 @@
+# Pipe Operator & Data Structures
+
+## Learning Objectives
+
+By the end of this checkpoint, you will:
+
+* Master the pipe operator `|>`
+* Choose appropriate data structures for different use cases
+* Parse CSV using binary pattern matching
+* Understand the difference between strings and charlists
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Setup
+
+```elixir
+Mix.install([])
+```
+
+## Concept: The Pipe Operator
+
+The pipe operator `|>` takes the result of the left side and passes it as the FIRST argument to the right side:
+
+```elixir
+# Without pipe - hard to read!
+result = Enum.take(Enum.filter(Enum.map([1, 2, 3, 4, 5], fn x -> x * 2 end), fn x -> x > 5 end), 2)
+IO.inspect(result, label: "Without pipe")
+
+# With pipe - much clearer!
+result =
+  [1, 2, 3, 4, 5]
+  |> Enum.map(fn x -> x * 2 end)
+  |> Enum.filter(fn x -> x > 5 end)
+  |> Enum.take(2)
+
+IO.inspect(result, label: "With pipe")
+```
+
+**Reading tip**: Read pipes top-to-bottom like a recipe!
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise: String vs Charlist
+
+A common source of bugs - understand the difference!
+
+```elixir
+# String (binary) - uses double quotes
+string = "hello"
+IO.inspect(string, label: "String")
+IO.inspect(is_binary(string), label: "Is binary?")
+
+# Charlist - uses single quotes
+charlist = 'hello'
+IO.inspect(charlist, label: "Charlist")
+IO.inspect(is_list(charlist), label: "Is list?")
+
+# They look similar but are DIFFERENT!
+IO.puts("\nComparison:")
+IO.puts("string == charlist: #{string == charlist}")
+IO.puts("String.to_charlist(string) == charlist: #{String.to_charlist(string) == charlist}")
+
+# Strings are UTF-8 binaries
+IO.puts("\nUTF-8 support:")
+emoji = "Hello 🌍"
+IO.puts("String with emoji: #{emoji}")
+IO.puts("Byte size: #{byte_size(emoji)}")
+IO.puts("String length: #{String.length(emoji)}")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise: Fix String/Charlist Bugs
+
+```elixir
+defmodule StringBugs do
+  # Bug: Mixing quotes - FIXED VERSION
+  def greet(name) do
+    "Hello, " <> name <> "!"
+  end
+
+  # Bug: Charlists don't work with Enum.join - FIXED VERSION
+  def join_words(words) do
+    # Convert charlists to strings if needed
+    words
+    |> Enum.map(&to_string/1)
+    |> Enum.join(", ")
+  end
+end
+
+IO.puts(StringBugs.greet("World"))
+IO.puts(StringBugs.join_words(["hello", "world"]))
+
+# This also works now!
+IO.puts(StringBugs.join_words(['hello', 'world']))
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Data Structures: Choosing the Right Tool
+
+```elixir
+# Tuple - Fixed size, heterogeneous
+result_tuple = {:ok, 42}
+coordinate = {10, 20, 30}
+IO.inspect(result_tuple, label: "Result tuple")
+IO.inspect(elem(coordinate, 0), label: "First element")
+
+# List - Variable size, recursive operations
+shopping_list = ["milk", "eggs", "bread"]
+IO.inspect([1 | [2, 3]], label: "List cons")
+
+# Map - Key-value with unique keys
+user_map = %{name: "Alice", age: 30, email: "alice@example.com"}
+IO.inspect(user_map.name, label: "Access by key")
+IO.inspect(Map.put(user_map, :city, "NYC"), label: "Updated map")
+
+# Keyword List - Multiple values per key, ordered
+config = [port: 4000, port: 5000, env: :dev]
+IO.inspect(config, label: "Keyword list")
+IO.inspect(Keyword.get_values(config, :port), label: "Multiple ports")
+
+# Struct - Map with defined keys
+defmodule User do
+  defstruct [:name, :email, age: 0]
+end
+
+user_struct = %User{name: "Bob", email: "bob@example.com", age: 25}
+IO.inspect(user_struct, label: "User struct")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise: Choose the Right Structure
+
+```elixir
+# 1. Function return with status and value
+# Answer: Tuple
+defmodule Example1 do
+  def divide(a, b) when b != 0, do: {:ok, a / b}
+  def divide(_, 0), do: {:error, :zero_division}
+end
+
+IO.inspect(Example1.divide(10, 2), label: "1. Tuple for results")
+
+# 2. Configuration options with defaults
+# Answer: Keyword list
+defmodule Example2 do
+  def start(opts \\ []) do
+    port = Keyword.get(opts, :port, 4000)
+    env = Keyword.get(opts, :env, :dev)
+    "Starting on port #{port} in #{env} mode"
+  end
+end
+
+IO.puts("2. #{Example2.start(port: 8080, env: :prod)}")
+
+# 3. User record with name, email, age
+# Answer: Struct (or Map)
+defmodule Example3 do
+  defmodule User do
+    defstruct [:name, :email, :age]
+
+    def new(attrs) do
+      struct(__MODULE__, attrs)
+    end
+  end
+end
+
+user = Example3.User.new(name: "Alice", email: "alice@example.com", age: 30)
+IO.inspect(user, label: "3. Struct for domain models")
+
+# 4. Collection of items to process in order
+# Answer: List
+defmodule Example4 do
+  def process_queue(items) do
+    items
+    |> Enum.map(&String.upcase/1)
+  end
+end
+
+IO.inspect(Example4.process_queue(["first", "second", "third"]), label: "4. List for sequences")
+
+# 5. Cache with key-value lookups
+# Answer: Map
+defmodule Example5 do
+  def cache_example do
+    cache = %{
+      "user:1" => %{name: "Alice"},
+      "user:2" => %{name: "Bob"}
+    }
+
+    Map.get(cache, "user:1")
+  end
+end
+
+IO.inspect(Example5.cache_example(), label: "5. Map for lookups")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise: Define a Product Struct
+
+```elixir
+defmodule Product do
+  @enforce_keys [:id, :name, :price]
+  defstruct [:id, :name, :price, in_stock: true]
+
+  @doc """
+  Creates a new product with validation.
+  """
+  def new(fields) do
+    with {:ok, validated} <- validate_fields(fields) do
+      {:ok, struct(__MODULE__, validated)}
+    end
+  end
+
+  defp validate_fields(fields) do
+    cond do
+      !Map.has_key?(fields, :id) -> {:error, :missing_id}
+      !Map.has_key?(fields, :name) -> {:error, :missing_name}
+      !Map.has_key?(fields, :price) -> {:error, :missing_price}
+      fields.name == "" -> {:error, :invalid_name}
+      fields.price < 0 -> {:error, :invalid_price}
+      true -> {:ok, fields}
+    end
+  end
+end
+
+# Test valid product
+case Product.new(%{id: 1, name: "Widget", price: 9.99}) do
+  {:ok, product} -> IO.inspect(product, label: "✅ Valid product")
+  {:error, reason} -> IO.puts("❌ Error: #{reason}")
+end
+
+# Test invalid product
+case Product.new(%{id: 1, name: "", price: -5}) do
+  {:ok, product} -> IO.inspect(product, label: "Product")
+  {:error, reason} -> IO.puts("❌ Error: #{reason}")
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## CSV Parsing with Binary Pattern Matching
+
+```elixir
+defmodule CSVParser do
+  @doc """
+  Parses a single CSV row.
+  """
+  def parse_row(line) do
+    line
+    |> String.trim()
+    |> String.split(",")
+  end
+
+  @doc """
+  Parses CSV with headers into a list of maps.
+  """
+  def parse_with_headers(csv) do
+    lines = String.split(csv, "\n", trim: true)
+
+    case lines do
+      [] ->
+        {:error, :empty_csv}
+
+      [header_line | data_lines] ->
+        headers = parse_row(header_line)
+
+        data =
+          data_lines
+          |> Enum.map(&parse_row/1)
+          |> Enum.map(fn values ->
+            headers
+            |> Enum.zip(values)
+            |> Map.new()
+          end)
+
+        {:ok, data}
+    end
+  end
+end
+
+# Test the parser
+csv = """
+name,age,city
+Alice,30,NYC
+Bob,25,SF
+Charlie,35,LA
+"""
+
+case CSVParser.parse_with_headers(csv) do
+  {:ok, data} -> IO.inspect(data, label: "Parsed CSV")
+  {:error, reason} -> IO.puts("Error: #{reason}")
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Streaming CSV Parser
+
+```elixir
+defmodule CSVStream do
+  @doc """
+  Returns a stream of parsed CSV rows.
+  """
+  def parse(path) do
+    path
+    |> File.stream!()
+    |> Stream.map(&String.trim/1)
+    |> Stream.map(&CSVParser.parse_row/1)
+  end
+
+  def parse_with_headers(path) do
+    stream = File.stream!(path)
+
+    # Get headers from first line
+    headers =
+      stream
+      |> Enum.take(1)
+      |> List.first()
+      |> String.trim()
+      |> CSVParser.parse_row()
+
+    # Stream the rest
+    stream
+    |> Stream.drop(1)
+    |> Stream.map(&String.trim/1)
+    |> Stream.map(&CSVParser.parse_row/1)
+    |> Stream.map(fn values ->
+      headers
+      |> Enum.zip(values)
+      |> Map.new()
+    end)
+  end
+end
+
+# Create test CSV file
+test_file = "/tmp/users.csv"
+
+File.write!(test_file, """
+name,age,city
+Alice,30,NYC
+Bob,25,LA
+Charlie,35,SF
+Diana,28,NYC
+""")
+
+# Stream and process
+result =
+  test_file
+  |> CSVStream.parse_with_headers()
+  |> Stream.filter(fn user -> user["city"] == "NYC" end)
+  |> Enum.to_list()
+
+IO.inspect(result, label: "NYC users")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Advanced: Pipeline Best Practices
+
+```elixir
+# Good: Clear, one operation per line
+good_pipeline =
+  [1, 2, 3, 4, 5]
+  |> Enum.map(&(&1 * 2))
+  |> Enum.filter(&(&1 > 5))
+  |> Enum.sum()
+
+IO.inspect(good_pipeline, label: "Good pipeline")
+
+# Avoid: Too many operations in anonymous function
+# Instead, extract to named function
+defmodule PipelineHelpers do
+  def double_and_filter(list) do
+    list
+    |> Enum.map(&double/1)
+    |> Enum.filter(&greater_than_five?/1)
+    |> Enum.sum()
+  end
+
+  defp double(x), do: x * 2
+  defp greater_than_five?(x), do: x > 5
+end
+
+IO.inspect(PipelineHelpers.double_and_filter([1, 2, 3, 4, 5]), label: "Extracted functions")
+
+# Use then/2 for multi-step transformations
+result =
+  [1, 2, 3]
+  |> Enum.map(&(&1 * 2))
+  |> then(fn doubled ->
+    # Complex operation that needs intermediate result
+    sum = Enum.sum(doubled)
+    {doubled, sum}
+  end)
+
+IO.inspect(result, label: "Using then/2")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Self-Assessment
+
+```elixir
+form = Kino.Control.form(
+  [
+    pipe_operator: {:checkbox, "I master the pipe operator"},
+    data_structures: {:checkbox, "I can choose appropriate data structures"},
+    string_vs_charlist: {:checkbox, "I understand strings vs charlists"},
+    csv_parsing: {:checkbox, "I can parse CSV with pattern matching"},
+    streaming: {:checkbox, "I can build streaming parsers"}
+  ],
+  submit: "Check Progress"
+)
+
+Kino.render(form)
+
+Kino.listen(form, fn event ->
+  completed = event.data |> Map.values() |> Enum.count(& &1)
+  total = map_size(event.data)
+
+  progress_message =
+    if completed == total do
+      "🎉 Excellent! You've mastered Checkpoint 6!"
+    else
+      "Keep going! #{completed}/#{total} objectives complete"
+    end
+
+  Kino.Markdown.new("### Progress: #{progress_message}") |> Kino.render()
+end)
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Key Takeaways
+
+* The **pipe operator** makes code readable and composable
+* **Tuples** for fixed-size, heterogeneous data
+* **Lists** for variable-size sequences
+* **Maps** for key-value lookups
+* **Keyword lists** for options (duplicates allowed, ordered)
+* **Structs** for domain models with validation
+* **Strings** (double quotes) are UTF-8 binaries
+* **Charlists** (single quotes) are lists of integers
+* Use **Stream** for large file processing
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Next Steps
+
+Almost there! Continue to the final checkpoint:
+
+**[Continue to Checkpoint 7: Advanced Patterns →](07-advanced-patterns.livemd)**
+
+Or return to [Checkpoint 5: Property Testing](05-property-testing.livemd)

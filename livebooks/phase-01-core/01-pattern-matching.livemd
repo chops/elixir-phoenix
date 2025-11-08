@@ -1,0 +1,282 @@
+# Pattern Matching & Guards
+
+## Learning Objectives
+
+By the end of this checkpoint, you will:
+
+* Master pattern matching on tuples, lists, and maps
+* Understand when to use guards vs pattern matching
+* Write multiple function heads with different patterns
+* Know the difference between `=` (match) and `==` (equality)
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Setup
+
+```elixir
+Mix.install([])
+```
+
+## Concept: Pattern Matching
+
+Pattern matching is one of Elixir's most powerful features. Unlike assignment in other languages, the `=` operator in Elixir is a **match operator** that attempts to make the left side equal to the right side.
+
+```elixir
+# Simple pattern match
+{:ok, value} = {:ok, 42}
+IO.puts("Matched value: #{value}")
+
+# List pattern matching
+[first | rest] = [1, 2, 3, 4]
+IO.puts("First: #{first}")
+IO.inspect(rest, label: "Rest")
+
+# Map pattern matching
+%{name: user_name, age: user_age} = %{name: "Alice", age: 30, city: "NYC"}
+IO.puts("Name: #{user_name}, Age: #{user_age}")
+
+:ok
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Concept: Guards
+
+Guards are additional constraints you can add to function clauses. They allow you to pattern match AND check conditions.
+
+```elixir
+defmodule AgeChecker do
+  def adult?(age) when is_integer(age) and age >= 18 do
+    true
+  end
+
+  def adult?(_), do: false
+end
+
+IO.puts("Is 25 an adult? #{AgeChecker.adult?(25)}")
+IO.puts("Is 15 an adult? #{AgeChecker.adult?(15)}")
+IO.puts("Is 'hello' an adult? #{AgeChecker.adult?("hello")}")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 1.1: Complete the Pattern Match
+
+Fill in the blanks to make these pattern matches work:
+
+```elixir
+# Match on a tuple
+# TODO: Fill in the blank
+{:ok, result_value} = {:ok, 42}
+IO.puts("Result: #{result_value}")
+
+# Match on a list head and tail
+# TODO: Fill in the blank
+[first_item | remaining_items] = [1, 2, 3, 4]
+IO.puts("First: #{first_item}")
+IO.inspect(remaining_items, label: "Rest")
+
+# Match on a map with specific keys
+# TODO: Fill in the blanks
+%{name: person_name, age: person_age} = %{name: "Alice", age: 30}
+IO.puts("Name: #{person_name}, Age: #{person_age}")
+
+:ok
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 1.2: Fix the Guards
+
+This code has bugs. Fix the guard clauses to handle edge cases properly:
+
+```elixir
+defmodule SafeMath do
+  # Bug: Guard allows zero division
+  # TODO: Add guard to prevent division by zero
+  def safe_div(a, b) when is_number(a) and is_number(b) and b != 0 do
+    {:ok, a / b}
+  end
+
+  def safe_div(_, 0), do: {:error, :zero_division}
+  def safe_div(_, _), do: {:error, :invalid_input}
+
+  # Bug: Missing guard for negative numbers
+  # TODO: Add guards for negative numbers
+  def sqrt(n) when is_number(n) and n >= 0 do
+    {:ok, :math.sqrt(n)}
+  end
+
+  def sqrt(n) when is_number(n) and n < 0 do
+    {:error, :negative_number}
+  end
+
+  def sqrt(_), do: {:error, :invalid_input}
+end
+
+# Test the functions
+IO.inspect(SafeMath.safe_div(10, 2), label: "10 / 2")
+IO.inspect(SafeMath.safe_div(10, 0), label: "10 / 0")
+IO.inspect(SafeMath.sqrt(16), label: "sqrt(16)")
+IO.inspect(SafeMath.sqrt(-4), label: "sqrt(-4)")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 1.3: Pattern Match Challenge
+
+Write a function that matches on different result tuples and provides default values:
+
+```elixir
+defmodule ResultHandler do
+  @doc """
+  Unwraps results or provides default values.
+
+  ## Examples
+      iex> ResultHandler.unwrap({:ok, 42}, 0)
+      42
+
+      iex> ResultHandler.unwrap({:error, :not_found}, 0)
+      0
+
+      iex> ResultHandler.unwrap(nil, 0)
+      0
+  """
+  # TODO: Implement using pattern matching
+  def unwrap({:ok, value}, _default), do: value
+  def unwrap({:error, _reason}, default), do: default
+  def unwrap(nil, default), do: default
+  def unwrap(_other, default), do: default
+end
+
+# Test your implementation
+IO.puts("Test 1: #{ResultHandler.unwrap({:ok, 42}, 0)}")
+IO.puts("Test 2: #{ResultHandler.unwrap({:error, :not_found}, 0)}")
+IO.puts("Test 3: #{ResultHandler.unwrap(nil, 99)}")
+IO.puts("Test 4: #{ResultHandler.unwrap("invalid", -1)}")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Advanced Pattern Matching
+
+Let's explore more complex patterns:
+
+```elixir
+defmodule PatternExamples do
+  # Matching on specific values
+  def handle_response({:ok, %{status: 200, body: body}}) do
+    {:success, body}
+  end
+
+  def handle_response({:ok, %{status: status}}) when status >= 400 do
+    {:error, :http_error}
+  end
+
+  def handle_response({:error, reason}) do
+    {:error, reason}
+  end
+
+  # Pin operator - match against existing variable
+  def find_in_list(list, target) do
+    case list do
+      [^target | _] -> {:found, :first}
+      [_, ^target | _] -> {:found, :second}
+      _ -> :not_found
+    end
+  end
+end
+
+# Test the functions
+response1 = {:ok, %{status: 200, body: "Success"}}
+IO.inspect(PatternExamples.handle_response(response1), label: "Response 1")
+
+response2 = {:ok, %{status: 404}}
+IO.inspect(PatternExamples.handle_response(response2), label: "Response 2")
+
+# Pin operator example
+IO.inspect(PatternExamples.find_in_list([1, 2, 3], 1), label: "Find 1 in list")
+IO.inspect(PatternExamples.find_in_list([1, 2, 3], 2), label: "Find 2 in list")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Self-Assessment
+
+Use this interactive checklist to track your understanding:
+
+```elixir
+form = Kino.Control.form(
+  [
+    match_tuples: {:checkbox, "I can match on tuples, lists, and maps"},
+    guards_vs_patterns: {:checkbox, "I understand when to use guards vs pattern matching"},
+    multiple_heads: {:checkbox, "I can write multiple function heads with different patterns"},
+    match_vs_equality: {:checkbox, "I know the difference between = (match) and == (equality)"},
+    pin_operator: {:checkbox, "I understand the pin operator (^)"}
+  ],
+  submit: "Check Progress"
+)
+
+Kino.render(form)
+
+Kino.listen(form, fn event ->
+  completed = event.data |> Map.values() |> Enum.count(& &1)
+  total = map_size(event.data)
+
+  progress_message =
+    if completed == total do
+      "🎉 Excellent! You've mastered Checkpoint 1!"
+    else
+      "Keep going! #{completed}/#{total} objectives complete"
+    end
+
+  Kino.Markdown.new("### Progress: #{progress_message}") |> Kino.render()
+end)
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Practice Challenge
+
+Try implementing a function that uses pattern matching to parse different command formats:
+
+```elixir
+defmodule CommandParser do
+  def parse("help"), do: {:help, :general}
+  def parse("help " <> topic), do: {:help, topic}
+  def parse("exit"), do: {:exit, :normal}
+  def parse("quit"), do: {:exit, :normal}
+  def parse("echo " <> message), do: {:echo, message}
+  def parse(cmd), do: {:unknown, cmd}
+end
+
+# Test the parser
+commands = ["help", "help patterns", "exit", "echo Hello World", "invalid"]
+
+for cmd <- commands do
+  result = CommandParser.parse(cmd)
+  IO.inspect(result, label: "Command: #{cmd}")
+end
+
+:ok
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Key Takeaways
+
+* **Pattern matching** is used for destructuring and binding values
+* **Guards** add additional constraints beyond structure
+* **Multiple function clauses** allow you to handle different cases cleanly
+* The **pin operator** `^` matches against an existing variable's value
+* Pattern matching happens at **compile time** when possible (more efficient!)
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Next Steps
+
+Congratulations on completing Checkpoint 1! Continue to the next checkpoint:
+
+**[Continue to Checkpoint 2: Recursion & Tail-Call Optimization →](02-recursion.livemd)**
+
+Or return to the [Setup Guide](../setup.livemd) to explore other phases.

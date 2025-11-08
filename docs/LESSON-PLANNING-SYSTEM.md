@@ -10,12 +10,13 @@ This repository contains a comprehensive lesson planning system designed to tran
 
 ### System Components
 
-The lesson planning system consists of **four interconnected layers**:
+The lesson planning system consists of **five interconnected layers**:
 
 1. **Workbooks** - Interactive exercises and self-assessment
 2. **Study Guides** - Reading schedules and daily objectives
 3. **Lesson Plans** - Detailed teaching materials and facilitation guides
 4. **Curriculum Map** - Visual dependencies and learning pathways
+5. **Livebook Notebooks** - Executable interactive learning experiences
 
 ---
 
@@ -190,6 +191,60 @@ graph TD
     P2 --> P3[Phase 3]
     ...
 ```
+
+---
+
+### 5. Livebook Notebooks (`livebooks/`)
+
+**Purpose:** Interactive, executable learning experiences with immediate feedback
+
+**Structure:**
+- Phase-specific directories (phase-01-core, phase-02-processes, etc.)
+- Multiple livebooks per phase (one per checkpoint)
+- Setup guide and progress dashboard
+- Smart cells for testing and load testing
+- Embedded visualizations and benchmarks
+
+**Content:**
+- Executable code cells with examples
+- Interactive exercises that students can modify and run
+- Self-assessment checklists with Kino forms
+- Visualizations using VegaLite
+- Property-based tests with StreamData
+- CSV parsing and streaming examples
+- Real-time progress tracking
+
+**Usage:**
+- Students execute code directly in the browser
+- Experiment by modifying examples
+- Complete interactive exercises inline
+- Track progress across all phases
+- Visualize performance comparisons
+
+**Example:** `livebooks/phase-01-core/01-pattern-matching.livemd`
+
+**Key Features:**
+```elixir
+# Interactive exercise
+defmodule ResultHandler do
+  def unwrap({:ok, value}, _default), do: value
+  def unwrap({:error, _}, default), do: default
+end
+
+# Self-assessment
+form = Kino.Control.form([
+  objective1: {:checkbox, "I can pattern match on tuples"},
+  objective2: {:checkbox, "I understand guards"}
+], submit: "Check Progress")
+```
+
+**Benefits over Static Workbooks:**
+- Immediate execution and feedback
+- No copy-paste to IEx required
+- Visual benchmarks and charts
+- Progress tracking built-in
+- Encourages experimentation
+- Self-paced with interactive validation
 
 ---
 

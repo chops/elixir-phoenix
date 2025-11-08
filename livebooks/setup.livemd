@@ -1,0 +1,224 @@
+# Welcome to Elixir Systems Mastery with Livebook
+
+## Introduction
+
+Welcome to the interactive learning experience for Elixir Systems Mastery! This repository transforms static markdown workbooks into executable Livebook notebooks, allowing you to learn by doing.
+
+**What is Livebook?**
+
+Livebook is an interactive, collaborative notebook for Elixir that allows you to:
+* Execute code directly in your browser
+* Visualize data and results in real-time
+* Share reproducible examples
+* Learn interactively with immediate feedback
+
+For more information, visit [https://livebook.dev](https://livebook.dev)
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Environment Check
+
+Let's verify your Elixir environment is ready to go!
+
+```elixir
+# Check Elixir version
+IO.puts("Elixir Version: #{System.version()}")
+IO.puts("OTP Version: #{System.otp_release()}")
+IO.puts("ERTS Version: #{:erlang.system_info(:version)}")
+
+# Verify we can run Mix
+case System.cmd("mix", ["--version"]) do
+  {output, 0} ->
+    IO.puts("\n✅ Mix is available:")
+    IO.puts(output)
+  {_output, _} ->
+    IO.puts("\n❌ Mix is not available or not in PATH")
+end
+
+:ok
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## How to Use Livebooks
+
+### Basic Controls
+
+* **Evaluate a cell**: Click the "Evaluate" button or press `Ctrl+Enter` (Mac: `Cmd+Enter`)
+* **Add a new cell**: Hover between cells and click the `+` button
+* **Edit markdown**: Double-click on any markdown cell
+* **Navigate**: Use the sidebar to jump between sections
+
+### Cell Types
+
+* **Elixir cells**: Contain executable Elixir code (shown with gray background)
+* **Markdown cells**: Contain formatted text and documentation
+* **Smart cells**: Special interactive cells for specific tasks (we'll use these later!)
+
+### Tips for Learning
+
+1. **Experiment freely**: All cells can be modified and re-executed
+2. **Use the REPL**: Define variables in one cell and use them in another
+3. **Check your work**: Most exercises include self-assessment checklists
+4. **Track progress**: Use the dashboard to monitor your completion status
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Repository Structure
+
+This learning repository is organized into 15 phases:
+
+```
+livebooks/
+├── setup.livemd (you are here!)
+├── dashboard.livemd (track your progress)
+├── phase-01-core/ (Elixir fundamentals)
+├── phase-02-processes/ (Processes & Mailboxes)
+├── phase-03-genserver/ (GenServer + Supervision)
+├── phase-04-naming/ (Naming & Fleets)
+├── phase-05-data/ (Data & Ecto)
+├── phase-06-phoenix/ (Phoenix Web)
+├── phase-07-jobs/ (Jobs & Ingestion)
+├── phase-08-caching/ (Caching & ETS)
+├── phase-09-distribution/ (Distribution)
+├── phase-10-observability/ (Observability & SLOs)
+├── phase-11-testing/ (Testing Strategy)
+├── phase-12-delivery/ (Delivery & Ops)
+├── phase-13-capstone/ (Capstone Integration)
+├── phase-14-cto/ (CTO Track)
+└── phase-15-ai/ (AI/ML Integration)
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Quick Start Tutorial
+
+Let's try a simple example to get you comfortable with Livebook:
+
+```elixir
+# Define a simple function
+defmodule Hello do
+  def greet(name) do
+    "Hello, #{name}! Welcome to Elixir Systems Mastery!"
+  end
+end
+
+# Call the function
+Hello.greet("Developer")
+```
+
+Now try modifying the code above! Change "Developer" to your name and re-evaluate the cell.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Interactive Input Example
+
+Livebook supports interactive inputs using Kino widgets:
+
+```elixir
+# Create an interactive text input
+name_input = Kino.Input.text("What's your name?")
+```
+
+```elixir
+# Read the input and use it
+name = Kino.Input.read(name_input)
+
+if name != "" do
+  Kino.Markdown.new("""
+  ## Welcome, #{name}!
+
+  You're ready to start your Elixir journey! 🚀
+  """)
+else
+  Kino.Markdown.new("Please enter your name above and re-evaluate this cell.")
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Prerequisites
+
+Before starting Phase 1, ensure you have completed:
+
+* ✅ Phase 0: Tooling Foundation (development environment setup)
+* ✅ Basic terminal/command line familiarity
+* ✅ Git basics (clone, commit, push)
+* ✅ Text editor or IDE configured
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Start Learning: Phase 1
+
+Phase 1 covers Elixir Core fundamentals through 7 interactive checkpoints:
+
+1. **[Pattern Matching & Guards](phase-01-core/01-pattern-matching.livemd)**
+   * Master pattern matching on tuples, lists, and maps
+   * Learn when to use guards vs pattern matching
+   * Practice with multiple function heads
+
+2. **[Recursion & Tail-Call Optimization](phase-01-core/02-recursion.livemd)**
+   * Understand tail vs non-tail recursion
+   * Use accumulators for optimization
+   * Implement core list operations
+
+3. **[Enum vs Stream](phase-01-core/03-enum-stream.livemd)**
+   * Choose between eager and lazy evaluation
+   * Build pipeline transformations
+   * Process large files efficiently
+
+4. **[Error Handling](phase-01-core/04-error-handling.livemd)**
+   * Use tagged tuples instead of exceptions
+   * Build `with` chains for success paths
+   * Handle errors gracefully
+
+5. **[Property-Based Testing](phase-01-core/05-property-testing.livemd)**
+   * Identify invariant properties
+   * Write tests with StreamData
+   * Find edge cases automatically
+
+6. **[Pipe Operator & Data Structures](phase-01-core/06-pipe-operator.livemd)**
+   * Master the pipe operator `|>`
+   * Choose appropriate data structures
+   * Parse CSV with binary patterns
+
+7. **[Advanced Patterns](phase-01-core/07-advanced-patterns.livemd)**
+   * Combine all Phase 1 concepts
+   * Build a streaming statistics calculator
+   * Complete the final challenge
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Progress Tracking
+
+Monitor your learning journey with the interactive dashboard:
+
+**[Open Progress Dashboard →](dashboard.livemd)**
+
+The dashboard shows:
+* Completion status for all 15 phases
+* Visual progress charts
+* Quick navigation to any checkpoint
+* Self-assessment tracking
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Additional Resources
+
+* **Livebook Documentation**: [https://livebook.dev](https://livebook.dev)
+* **Elixir Official Guides**: [https://elixir-lang.org/getting-started](https://elixir-lang.org/getting-started)
+* **HexDocs**: [https://hexdocs.pm](https://hexdocs.pm)
+* **Elixir Forum**: [https://elixirforum.com](https://elixirforum.com)
+* **Repository Documentation**: See `docs/` directory for additional study guides
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Ready to Start?
+
+Click below to begin your journey with Phase 1, Checkpoint 1:
+
+**[Begin Phase 1: Pattern Matching & Guards →](phase-01-core/01-pattern-matching.livemd)**
+
+---
+
+*Happy learning! Remember: experimentation is key. Modify code, break things, and learn from the results.* 🎓
