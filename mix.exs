@@ -40,7 +40,12 @@ defmodule ElixirSystemsMastery.MixProject do
       # Livebook dependencies
       {:kino, "~> 0.12"},
       {:kino_vega_lite, "~> 0.1"},
-      {:kino_db, "~> 0.2"}
+      {:kino_db, "~> 0.2"},
+      # Jido AI Agent Framework
+      {:jido, "~> 1.0"},
+      {:instructor, "~> 0.0.5"},
+      {:jason, "~> 1.4"},
+      {:req, "~> 0.4"}
     ]
   end
 

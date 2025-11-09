@@ -62,3 +62,15 @@ smoke: ## Run smoke tests
 
 livebook: ## Start Livebook server
 	livebook server --home livebooks/
+
+jido-grade: ## Grade current code with Jido AI
+	mix jido.grade
+
+jido-grade-interactive: ## Grade with detailed interactive feedback
+	mix jido.grade --interactive
+
+jido-ask: ## Ask Jido a question (usage: make jido-ask QUESTION="What is recursion?")
+	mix jido.ask "$(QUESTION)"
+
+jido-scaffold: ## Scaffold a new project (usage: make jido-scaffold TYPE=genserver NAME=Counter PHASE=3)
+	mix jido.scaffold --type $(TYPE) --name $(NAME) --phase $(PHASE)

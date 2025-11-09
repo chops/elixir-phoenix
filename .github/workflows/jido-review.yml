@@ -1,0 +1,132 @@
+name: Jido AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/**/lib/**/*.ex'
+      - 'lib/**/*.ex'
+
+jobs:
+  jido-review:
+    runs-on: ubuntu-latest
+    name: AI Code Review
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.17'
+          otp-version: '27'
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Compile
+        run: mix compile
+
+      - name: Run Jido Code Review
+        id: review
+        run: |
+          # Detect which files changed
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.ex$' || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No Elixir files changed"
+            exit 0
+          fi
+
+          echo "Reviewing changed files:"
+          echo "$CHANGED_FILES"
+
+          # Run jido.grade on changed files
+          # Note: This is a simplified version - full implementation would review individual files
+          mix jido.grade --interactive > review_output.txt 2>&1 || true
+
+          cat review_output.txt
+
+      - name: Post review comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let reviewOutput = '';
+
+            try {
+              reviewOutput = fs.readFileSync('review_output.txt', 'utf8');
+            } catch (error) {
+              reviewOutput = 'No review output generated';
+            }
+
+            const body = `## 🤖 Jido AI Code Review
+
+            ${reviewOutput}
+
+            ---
+            *This is an automated review by Jido AI agents. Please review the suggestions and apply improvements as appropriate.*
+
+            To run locally:
+            \`\`\`bash
+            mix jido.grade --interactive
+            \`\`\`
+            `;
+
+            // Post comment on PR
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+  grade-check:
+    runs-on: ubuntu-latest
+    name: Code Quality Gate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.17'
+          otp-version: '27'
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os}}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Compile
+        run: mix compile
+
+      - name: Run quality gate
+        run: |
+          # Run with threshold of 70 (configurable)
+          mix jido.grade --threshold 70
+        continue-on-error: true
+        # Allow PR to proceed even if quality gate fails
+        # But the check status will show the failure
