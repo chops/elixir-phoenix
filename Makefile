@@ -59,3 +59,6 @@ load: ## Run load tests
 
 smoke: ## Run smoke tests
 	k6 run tools/k6/smoke.js
+
+livebook: ## Start Livebook server
+	livebook server --home livebooks/

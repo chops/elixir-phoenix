@@ -1,0 +1,566 @@
+# Advanced Patterns & Final Challenge
+
+## Learning Objectives
+
+By the end of this checkpoint, you will:
+
+* Combine all Phase 1 concepts into real-world applications
+* Build a streaming statistics calculator
+* Apply pattern matching, recursion, pipelines, and error handling together
+* Demonstrate mastery of Elixir core fundamentals
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Setup
+
+```elixir
+Mix.install([
+  {:stream_data, "~> 0.6"}
+])
+```
+
+## Review: All Phase 1 Concepts
+
+Before the final challenge, let's review what you've learned:
+
+```elixir
+defmodule Phase1Review do
+  # 1. Pattern Matching & Guards
+  def unwrap({:ok, value}), do: value
+  def unwrap({:error, _}), do: nil
+
+  def adult?(age) when is_integer(age) and age >= 18, do: true
+  def adult?(_), do: false
+
+  # 2. Recursion & Tail-Call Optimization
+  def sum(list), do: sum(list, 0)
+  defp sum([], acc), do: acc
+  defp sum([h | t], acc), do: sum(t, acc + h)
+
+  # 3. Enum vs Stream
+  def process_large_file(path) do
+    path
+    |> File.stream!()
+    |> Stream.filter(&String.contains?(&1, "ERROR"))
+    |> Enum.take(10)
+  end
+
+  # 4. Error Handling with Tagged Tuples
+  def divide(a, b) when b != 0, do: {:ok, a / b}
+  def divide(_, 0), do: {:error, :zero_division}
+
+  # 5. with Chains
+  def process_user(id) do
+    with {:ok, user} <- fetch_user(id),
+         {:ok, profile} <- fetch_profile(user),
+         {:ok, posts} <- fetch_posts(user) do
+      {:ok, %{user: user, profile: profile, posts: posts}}
+    end
+  end
+
+  defp fetch_user(_), do: {:ok, %{id: 1}}
+  defp fetch_profile(_), do: {:ok, %{bio: "..."}}
+  defp fetch_posts(_), do: {:ok, []}
+
+  # 6. Data Structures
+  defmodule User do
+    defstruct [:id, :name, :email]
+  end
+
+  # 7. Pipe Operator
+  def transform_data(data) do
+    data
+    |> Enum.map(&String.trim/1)
+    |> Enum.filter(&(&1 != ""))
+    |> Enum.map(&String.upcase/1)
+  end
+end
+
+IO.puts("✅ Phase 1 concepts reviewed!")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Final Challenge: Statistics Calculator
+
+Build a comprehensive statistics calculator that demonstrates all Phase 1 skills.
+
+### Requirements
+
+* Calculate mean, median, mode, standard deviation
+* Stream large CSV files
+* Handle errors gracefully
+* Use pattern matching and recursion
+* Write property tests
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Step 1: Define the Stats Struct
+
+```elixir
+defmodule Stats do
+  @moduledoc """
+  Statistical calculations using pure functions and streaming.
+  """
+
+  defstruct [:mean, :median, :mode, :std_dev, :count, :min, :max]
+
+  @type t :: %__MODULE__{
+          mean: float() | nil,
+          median: float() | nil,
+          mode: list() | nil,
+          std_dev: float() | nil,
+          count: non_neg_integer(),
+          min: number() | nil,
+          max: number() | nil
+        }
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Step 2: Implement Core Calculations
+
+```elixir
+defmodule Stats.Calculator do
+  @doc """
+  Calculates mean (average) of a list of numbers.
+  """
+  def mean([]), do: nil
+
+  def mean(numbers) do
+    sum = Enum.sum(numbers)
+    count = length(numbers)
+    sum / count
+  end
+
+  @doc """
+  Calculates median (middle value) of a list of numbers.
+  """
+  def median([]), do: nil
+
+  def median(numbers) do
+    sorted = Enum.sort(numbers)
+    count = length(sorted)
+    mid = div(count, 2)
+
+    if rem(count, 2) == 0 do
+      # Even number of elements - average the two middle values
+      (Enum.at(sorted, mid - 1) + Enum.at(sorted, mid)) / 2
+    else
+      # Odd number of elements - take the middle one
+      Enum.at(sorted, mid)
+    end
+  end
+
+  @doc """
+  Calculates mode (most frequent value(s)) of a list.
+  """
+  def mode([]), do: []
+
+  def mode(numbers) do
+    frequencies =
+      numbers
+      |> Enum.frequencies()
+
+    max_frequency =
+      frequencies
+      |> Map.values()
+      |> Enum.max()
+
+    frequencies
+    |> Enum.filter(fn {_num, freq} -> freq == max_frequency end)
+    |> Enum.map(fn {num, _freq} -> num end)
+    |> Enum.sort()
+  end
+
+  @doc """
+  Calculates standard deviation of a list of numbers.
+  """
+  def std_dev([]), do: nil
+  def std_dev([_]), do: 0.0
+
+  def std_dev(numbers) do
+    avg = mean(numbers)
+    count = length(numbers)
+
+    variance =
+      numbers
+      |> Enum.map(fn x -> :math.pow(x - avg, 2) end)
+      |> Enum.sum()
+      |> Kernel./(count)
+
+    :math.sqrt(variance)
+  end
+end
+
+# Test the calculator
+test_data = [1, 2, 3, 4, 5, 5, 6, 7, 8, 9]
+IO.puts("Test Data: #{inspect(test_data)}")
+IO.puts("Mean: #{Stats.Calculator.mean(test_data)}")
+IO.puts("Median: #{Stats.Calculator.median(test_data)}")
+IO.puts("Mode: #{inspect(Stats.Calculator.mode(test_data))}")
+IO.puts("Std Dev: #{Stats.Calculator.std_dev(test_data)}")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Step 3: Complete Stats Module
+
+```elixir
+defmodule Stats do
+  alias Stats.Calculator
+
+  @doc """
+  Calculates statistics for a list of numbers.
+  """
+  def calculate([]), do: {:error, :empty_list}
+
+  def calculate(numbers) when is_list(numbers) do
+    # Validate all elements are numbers
+    if Enum.all?(numbers, &is_number/1) do
+      stats = %Stats{
+        mean: Calculator.mean(numbers),
+        median: Calculator.median(numbers),
+        mode: Calculator.mode(numbers),
+        std_dev: Calculator.std_dev(numbers),
+        count: length(numbers),
+        min: Enum.min(numbers),
+        max: Enum.max(numbers)
+      }
+
+      {:ok, stats}
+    else
+      {:error, :invalid_data}
+    end
+  end
+
+  @doc """
+  Streams a CSV file and calculates statistics for a column.
+  """
+  def from_csv(path, opts \\ []) do
+    column = Keyword.get(opts, :column, 0)
+
+    with {:ok, numbers} <- read_csv_column(path, column) do
+      calculate(numbers)
+    end
+  end
+
+  defp read_csv_column(path, column_name) when is_binary(column_name) do
+    case File.exists?(path) do
+      false ->
+        {:error, :file_not_found}
+
+      true ->
+        try do
+          # Read header to find column index
+          [header | _] = File.stream!(path) |> Enum.take(1)
+          headers = String.trim(header) |> String.split(",")
+
+          column_index =
+            headers
+            |> Enum.find_index(&(&1 == column_name))
+
+          if column_index do
+            read_csv_column(path, column_index)
+          else
+            {:error, :column_not_found}
+          end
+        rescue
+          _ -> {:error, :invalid_csv}
+        end
+    end
+  end
+
+  defp read_csv_column(path, column_index) when is_integer(column_index) do
+    try do
+      numbers =
+        path
+        |> File.stream!()
+        |> Stream.drop(1)
+        # Skip header
+        |> Stream.map(&String.trim/1)
+        |> Stream.map(&String.split(&1, ","))
+        |> Stream.map(&Enum.at(&1, column_index))
+        |> Stream.reject(&is_nil/1)
+        |> Stream.map(&parse_number/1)
+        |> Stream.reject(&is_nil/1)
+        |> Enum.to_list()
+
+      {:ok, numbers}
+    rescue
+      _ -> {:error, :invalid_csv}
+    end
+  end
+
+  defp parse_number(str) do
+    case Float.parse(str) do
+      {num, _} -> num
+      :error -> nil
+    end
+  end
+end
+
+# Test with sample data
+test_stats = Stats.calculate([1, 2, 3, 4, 5, 5, 6, 7, 8, 9])
+IO.inspect(test_stats, label: "Statistics")
+
+# Test error handling
+IO.inspect(Stats.calculate([]), label: "Empty list")
+IO.inspect(Stats.calculate([1, 2, "invalid"]), label: "Invalid data")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Step 4: Test with Real CSV
+
+```elixir
+# Create test CSV file
+test_csv = "/tmp/sales_data.csv"
+
+File.write!(test_csv, """
+date,product,quantity,price
+2024-01-01,Widget,5,19.99
+2024-01-02,Gadget,3,29.99
+2024-01-03,Widget,8,19.99
+2024-01-04,Doohickey,2,9.99
+2024-01-05,Widget,6,19.99
+2024-01-06,Gadget,4,29.99
+2024-01-07,Widget,7,19.99
+""")
+
+# Calculate statistics for quantity column
+case Stats.from_csv(test_csv, column: "quantity") do
+  {:ok, stats} ->
+    IO.puts("📊 Quantity Statistics:")
+    IO.puts("  Count: #{stats.count}")
+    IO.puts("  Mean: #{Float.round(stats.mean, 2)}")
+    IO.puts("  Median: #{stats.median}")
+    IO.puts("  Mode: #{inspect(stats.mode)}")
+    IO.puts("  Std Dev: #{Float.round(stats.std_dev, 2)}")
+    IO.puts("  Min: #{stats.min}")
+    IO.puts("  Max: #{stats.max}")
+
+  {:error, reason} ->
+    IO.puts("❌ Error: #{reason}")
+end
+
+# Calculate statistics for price column
+case Stats.from_csv(test_csv, column: "price") do
+  {:ok, stats} ->
+    IO.puts("\n💰 Price Statistics:")
+    IO.puts("  Mean: $#{Float.round(stats.mean, 2)}")
+    IO.puts("  Median: $#{stats.median}")
+
+  {:error, reason} ->
+    IO.puts("❌ Error: #{reason}")
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Step 5: Property-Based Tests
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule StatsTest do
+  use ExUnit.Case
+  use ExUnitProperties
+
+  property "mean is always between min and max" do
+    check all numbers <- list_of(integer(1..100), min_length: 1) do
+      {:ok, stats} = Stats.calculate(numbers)
+
+      assert stats.mean >= stats.min
+      assert stats.mean <= stats.max
+    end
+  end
+
+  property "count equals list length" do
+    check all numbers <- list_of(integer()) do
+      case Stats.calculate(numbers) do
+        {:ok, stats} -> assert stats.count == length(numbers)
+        {:error, :empty_list} -> assert numbers == []
+      end
+    end
+  end
+
+  property "median is in the middle" do
+    check all numbers <- list_of(integer(1..100), min_length: 1) do
+      {:ok, stats} = Stats.calculate(numbers)
+      sorted = Enum.sort(numbers)
+      count = length(sorted)
+
+      # Half the numbers should be <= median
+      below_or_equal = Enum.count(sorted, &(&1 <= stats.median))
+      assert below_or_equal >= div(count, 2)
+    end
+  end
+
+  property "std dev is non-negative" do
+    check all numbers <- list_of(integer(), min_length: 1) do
+      {:ok, stats} = Stats.calculate(numbers)
+      assert stats.std_dev >= 0
+    end
+  end
+
+  property "mode values are in the original list" do
+    check all numbers <- list_of(integer(), min_length: 1) do
+      {:ok, stats} = Stats.calculate(numbers)
+      assert Enum.all?(stats.mode, &(&1 in numbers))
+    end
+  end
+end
+
+ExUnit.run()
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Bonus Challenge: Streaming Statistics
+
+For large files, calculate statistics without loading all data into memory:
+
+```elixir
+defmodule Stats.Streaming do
+  @doc """
+  Calculates streaming statistics (mean only for now) without loading all data.
+  """
+  def streaming_mean(path, column) do
+    path
+    |> File.stream!()
+    |> Stream.drop(1)
+    |> Stream.map(&String.trim/1)
+    |> Stream.map(&String.split(&1, ","))
+    |> Stream.map(&Enum.at(&1, column))
+    |> Stream.reject(&is_nil/1)
+    |> Stream.map(&parse_number/1)
+    |> Stream.reject(&is_nil/1)
+    |> Enum.reduce({0, 0}, fn num, {sum, count} ->
+      {sum + num, count + 1}
+    end)
+    |> then(fn {sum, count} ->
+      if count > 0, do: {:ok, sum / count}, else: {:error, :no_data}
+    end)
+  end
+
+  defp parse_number(str) do
+    case Float.parse(str) do
+      {num, _} -> num
+      :error -> nil
+    end
+  end
+end
+
+# Test streaming calculation
+case Stats.Streaming.streaming_mean(test_csv, 2) do
+  {:ok, mean} -> IO.puts("Streaming mean of quantity: #{Float.round(mean, 2)}")
+  {:error, reason} -> IO.puts("Error: #{reason}")
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Final Self-Assessment
+
+Congratulations! You've completed Phase 1. Verify your mastery:
+
+```elixir
+form = Kino.Control.form(
+  [
+    pattern_matching: {:checkbox, "I can write pure functions with pattern matching and guards"},
+    tail_recursion: {:checkbox, "I can implement tail-recursive functions with accumulators"},
+    enum_stream: {:checkbox, "I choose between Enum and Stream appropriately"},
+    pipelines: {:checkbox, "I build pipeline transformations with |>"},
+    error_handling: {:checkbox, "I handle errors with tagged tuples and with"},
+    property_tests: {:checkbox, "I write property-based tests with StreamData"},
+    csv_parsing: {:checkbox, "I can parse CSV using binary pattern matching"},
+    streaming: {:checkbox, "I stream large files efficiently"},
+    structs: {:checkbox, "I define and use structs for domain models"},
+    final_challenge: {:checkbox, "I completed the statistics calculator challenge"}
+  ],
+  submit: "Complete Phase 1"
+)
+
+Kino.render(form)
+
+Kino.listen(form, fn event ->
+  completed = event.data |> Map.values() |> Enum.count(& &1)
+  total = map_size(event.data)
+
+  progress_message =
+    if completed == total do
+      """
+      # 🎉 Phase 1 Complete!
+
+      Congratulations! You've mastered Elixir Core fundamentals.
+
+      **What you've learned:**
+      - Pattern matching and guards
+      - Tail-recursive functions
+      - Enum vs Stream
+      - Pipeline transformations
+      - Error handling with tagged tuples
+      - Property-based testing
+      - Data structures and CSV parsing
+      - Building real-world applications
+
+      **Next Steps:**
+      Ready to move on to Phase 2: Processes & Mailboxes!
+
+      Return to the [dashboard](../dashboard.livemd) to continue your journey.
+      """
+    else
+      "Progress: #{completed}/#{total} objectives complete. Keep going!"
+    end
+
+  Kino.Markdown.new(progress_message) |> Kino.render()
+end)
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Key Takeaways from Phase 1
+
+* **Pattern matching** is the foundation of Elixir code
+* **Recursion** with tail-call optimization handles any size data
+* **Enum** for small collections, **Stream** for large/infinite ones
+* **Pipelines** make code readable and composable
+* **Tagged tuples** handle errors explicitly and safely
+* **Property tests** find bugs you didn't know existed
+* **Structs** model your domain with validation
+* All these concepts **compose** to build real applications
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Additional Challenges
+
+If you want more practice before moving to Phase 2:
+
+1. **Add histogram calculation** to the Stats module
+2. **Implement quartiles** (25th, 50th, 75th percentiles)
+3. **Add correlation** calculation between two columns
+4. **Build a CLI** tool that uses Stats module
+5. **Add caching** to avoid recalculating stats for same file
+6. **Implement outlier detection** using standard deviation
+7. **Add data validation** with more specific error messages
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Phase Complete!
+
+**Congratulations on completing Phase 1: Elixir Core!** 🎊
+
+You now have a solid foundation in functional programming with Elixir. These skills will serve you throughout your entire Elixir journey.
+
+---
+
+**What's Next?**
+
+* Return to [Dashboard](../dashboard.livemd) to track progress
+* Move to Phase 2: Processes & Mailboxes (coming soon!)
+* Review any checkpoints where you need more practice
+* Share your statistics calculator with the community!
+
+*Keep experimenting and building. The best way to learn is by doing!* 🚀
