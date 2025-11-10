@@ -9,6 +9,9 @@
     # Language server for Emacs LSP
     elixir-ls
 
+    # Livebook for interactive notebooks
+    beam.packages.erlang_27.livebook
+
     # Node.js for Phoenix assets
     nodejs
 

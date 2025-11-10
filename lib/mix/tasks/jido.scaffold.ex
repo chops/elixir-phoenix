@@ -171,7 +171,7 @@ defmodule Mix.Tasks.Jido.Scaffold do
          :ok <- generate_main_module(type, name, features, app_path),
          :ok <- generate_tests(type, name, features, app_path),
          :ok <- generate_readme(type, name, phase, features, app_path) do
-      :ok
+      {:ok, app_path}
     end
   end
 

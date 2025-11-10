@@ -9,6 +9,7 @@ defmodule ElixirSystemsMastery.MixProject do
       deps: deps(),
       aliases: aliases(),
       releases: releases(),
+      dialyzer: dialyzer(),
       test_coverage: [
         tool: ExCoveralls,
         export: "cov"
@@ -41,11 +42,11 @@ defmodule ElixirSystemsMastery.MixProject do
       {:kino, "~> 0.12"},
       {:kino_vega_lite, "~> 0.1"},
       {:kino_db, "~> 0.2"},
-      # Jido AI Agent Framework
-      {:jido, "~> 1.0"},
-      {:instructor, "~> 0.0.5"},
+      # Jido AI Agent Framework - using main branch for Dialyzer fixes
+      {:jido, github: "agentjido/jido", branch: "main"},
+      {:instructor, "~> 0.1.0"},
       {:jason, "~> 1.4"},
-      {:req, "~> 0.4"}
+      {:req, "~> 0.5"}
     ]
   end
 
@@ -69,6 +70,14 @@ defmodule ElixirSystemsMastery.MixProject do
           runtime_tools: :permanent
         ]
       ]
+    ]
+  end
+
+  defp dialyzer do
+    [
+      plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+      plt_add_apps: [:mix, :ex_unit],
+      ignore_warnings: ".dialyzer_ignore.exs"
     ]
   end
 end

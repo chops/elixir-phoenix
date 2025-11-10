@@ -189,35 +189,32 @@ defmodule Mix.Tasks.Jido.Grade do
   end
 
   defp get_phase_files(phase) do
-    # Map phase to lab apps
-    app_name =
-      case phase do
-        1 -> "labs_csv_stats"
-        2 -> "labs_mailbox_kv"
-        3 -> "labs_counter_ttl"
-        4 -> "labs_session_workers"
-        5 -> "labs_inventory"
-        6 -> "labs_cart_api"
-        7 -> "labs_job_queue"
-        8 -> "labs_cache"
-        9 -> "labs_cluster"
-        10 -> "labs_metrics"
-        11 -> "labs_integration_tests"
-        12 -> "labs_deployment"
-        13 -> "labs_capstone"
-        14 -> "labs_architecture"
-        15 -> "labs_jido_agent"
-        _ -> nil
-      end
+    case phase_to_app_name(phase) do
+      nil ->
+        Mix.shell().info("No specific app for phase #{phase}, scanning all labs apps...")
+        Path.wildcard("apps/labs_*/lib/**/*.ex")
 
-    if app_name do
-      get_app_files(app_name)
-    else
-      # If no specific app, try to find any labs_* in apps/
-      Mix.shell().info("No specific app for phase #{phase}, scanning all labs apps...")
-      Path.wildcard("apps/labs_*/lib/**/*.ex")
+      app_name ->
+        get_app_files(app_name)
     end
   end
+
+  defp phase_to_app_name(1), do: "labs_csv_stats"
+  defp phase_to_app_name(2), do: "labs_mailbox_kv"
+  defp phase_to_app_name(3), do: "labs_counter_ttl"
+  defp phase_to_app_name(4), do: "labs_session_workers"
+  defp phase_to_app_name(5), do: "labs_inventory"
+  defp phase_to_app_name(6), do: "labs_cart_api"
+  defp phase_to_app_name(7), do: "labs_job_queue"
+  defp phase_to_app_name(8), do: "labs_cache"
+  defp phase_to_app_name(9), do: "labs_cluster"
+  defp phase_to_app_name(10), do: "labs_metrics"
+  defp phase_to_app_name(11), do: "labs_integration_tests"
+  defp phase_to_app_name(12), do: "labs_deployment"
+  defp phase_to_app_name(13), do: "labs_capstone"
+  defp phase_to_app_name(14), do: "labs_architecture"
+  defp phase_to_app_name(15), do: "labs_jido_agent"
+  defp phase_to_app_name(_), do: nil
 
   defp grade_file(file_path, phase, focus, interactive) do
     Mix.shell().info("📝 Reviewing: #{Path.relative_to_cwd(file_path)}")
@@ -282,49 +279,56 @@ defmodule Mix.Tasks.Jido.Grade do
     Mix.shell().info("  Score: #{feedback.score}/100")
     Mix.shell().info("")
 
-    if length(feedback.issues) > 0 do
-      Mix.shell().info("  Issues:")
+    display_issues(feedback.issues)
+    display_suggestions(feedback.suggestions)
+  end
 
-      Enum.each(feedback.issues, fn issue ->
-        severity_color =
-          case issue.severity do
-            :critical -> :red
-            :high -> :red
-            :medium -> :yellow
-            :low -> :cyan
-            _ -> :normal
-          end
+  defp display_issues([]), do: :ok
 
-        Mix.shell().info([
-          "    ",
-          severity_color,
-          "#{String.upcase(to_string(issue.severity))}",
-          :reset,
-          " [#{issue.type}] Line #{issue.line || "?"}"
-        ])
+  defp display_issues(issues) do
+    Mix.shell().info("  Issues:")
+    Enum.each(issues, &display_single_issue/1)
+  end
 
-        Mix.shell().info("    #{issue.message}")
+  defp display_single_issue(issue) do
+    severity_color = severity_to_color(issue.severity)
 
-        if issue.suggestion do
-          Mix.shell().info(["    ", :green, "💡 #{issue.suggestion}", :reset])
-        end
+    Mix.shell().info([
+      "    ",
+      severity_color,
+      "#{String.upcase(to_string(issue.severity))}",
+      :reset,
+      " [#{issue.type}] Line #{issue.line || "?"}"
+    ])
 
-        Mix.shell().info("")
-      end)
+    Mix.shell().info("    #{issue.message}")
+
+    if issue.suggestion do
+      Mix.shell().info(["    ", :green, "💡 #{issue.suggestion}", :reset])
     end
 
-    if length(feedback.suggestions) > 0 do
-      Mix.shell().info("  Suggestions:")
+    Mix.shell().info("")
+  end
 
-      Enum.each(feedback.suggestions, fn suggestion ->
-        Mix.shell().info("    • #{suggestion.suggestion}")
+  defp severity_to_color(:critical), do: :red
+  defp severity_to_color(:high), do: :red
+  defp severity_to_color(:medium), do: :yellow
+  defp severity_to_color(:low), do: :cyan
+  defp severity_to_color(_), do: :normal
 
-        if length(suggestion.resources) > 0 do
-          Mix.shell().info("      Resources: #{Enum.join(suggestion.resources, ", ")}")
-        end
-      end)
+  defp display_suggestions([]), do: :ok
 
-      Mix.shell().info("")
+  defp display_suggestions(suggestions) do
+    Mix.shell().info("  Suggestions:")
+    Enum.each(suggestions, &display_single_suggestion/1)
+    Mix.shell().info("")
+  end
+
+  defp display_single_suggestion(suggestion) do
+    Mix.shell().info("    • #{suggestion.suggestion}")
+
+    if length(suggestion.resources) > 0 do
+      Mix.shell().info("      Resources: #{Enum.join(suggestion.resources, ", ")}")
     end
   end
 

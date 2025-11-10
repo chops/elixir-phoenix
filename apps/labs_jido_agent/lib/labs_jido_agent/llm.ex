@@ -73,19 +73,18 @@ defmodule LabsJidoAgent.LLM do
     temperature = Keyword.get(opts, :temperature, 0.7)
     max_tokens = Keyword.get(opts, :max_tokens, 2000)
 
-    params = %{
+    params = [
       model: model_name(model),
       temperature: temperature,
       max_tokens: max_tokens,
       messages: [
         %{role: "user", content: prompt}
       ]
-    }
+    ]
 
-    case call_llm(params) do
-      {:ok, response} -> {:ok, extract_text(response)}
-      error -> error
-    end
+    # Note: For simple chat without response_model, Instructor returns the raw response
+    # We'll need to adapt this based on actual Instructor behavior
+    call_llm(params)
   end
 
   @doc """
@@ -152,16 +151,31 @@ defmodule LabsJidoAgent.LLM do
 
   defp call_llm(params) do
     if available?() do
+      # Get API key and config based on provider
+      api_key = case provider() do
+        :openai -> System.get_env("OPENAI_API_KEY")
+        :anthropic -> System.get_env("ANTHROPIC_API_KEY")
+        :gemini -> System.get_env("GEMINI_API_KEY")
+      end
+
+      api_url = case provider() do
+        :openai -> "https://api.openai.com"
+        :anthropic -> "https://api.anthropic.com"
+        :gemini -> "https://generativelanguage.googleapis.com"
+      end
+
+      config = [
+        api_key: api_key,
+        api_url: api_url,
+        http_options: [receive_timeout: 60_000]
+      ]
+
       # Use Instructor for all calls (it handles provider differences)
-      Instructor.chat_completion(params)
+      Instructor.chat_completion(params, config)
     else
       {:error, "LLM not configured. Set #{provider_env_var()} environment variable."}
     end
   end
-
-  defp extract_text(%{choices: [%{message: %{content: content}} | _]}), do: content
-  defp extract_text(response) when is_binary(response), do: response
-  defp extract_text(_), do: ""
 
   defp provider_env_var do
     case provider() do

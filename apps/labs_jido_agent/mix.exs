@@ -28,10 +28,10 @@ defmodule LabsJidoAgent.MixProject do
 
   defp deps do
     [
-      {:jido, "~> 1.0"},
-      {:instructor, "~> 0.0.5"},
+      {:jido, github: "agentjido/jido", branch: "main"},
+      {:instructor, "~> 0.1.0"},
       {:jason, "~> 1.4"},
-      {:req, "~> 0.4"}
+      {:req, "~> 0.5"}
     ]
   end
 end
