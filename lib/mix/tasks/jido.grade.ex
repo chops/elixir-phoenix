@@ -196,21 +196,47 @@ defmodule Mix.Tasks.Jido.Grade do
         2 -> "labs_mailbox_kv"
         3 -> "labs_counter_ttl"
         4 -> "labs_session_workers"
+        5 -> "labs_inventory"
+        6 -> "labs_cart_api"
+        7 -> "labs_job_queue"
+        8 -> "labs_cache"
+        9 -> "labs_cluster"
+        10 -> "labs_metrics"
+        11 -> "labs_integration_tests"
+        12 -> "labs_deployment"
+        13 -> "labs_capstone"
+        14 -> "labs_architecture"
+        15 -> "labs_jido_agent"
         _ -> nil
       end
 
     if app_name do
       get_app_files(app_name)
     else
-      []
+      # If no specific app, try to find any labs_* in apps/
+      Mix.shell().info("No specific app for phase #{phase}, scanning all labs apps...")
+      Path.wildcard("apps/labs_*/lib/**/*.ex")
     end
   end
 
   defp grade_file(file_path, phase, focus, interactive) do
     Mix.shell().info("📝 Reviewing: #{Path.relative_to_cwd(file_path)}")
 
-    code = File.read!(file_path)
+    case File.read(file_path) do
+      {:error, reason} ->
+        Mix.shell().error("  Error reading file: #{inspect(reason)}")
+        %{file: file_path, score: 0, feedback: nil, passed: false, error: :unreadable}
 
+      {:ok, ""} ->
+        Mix.shell().error("  Skipping empty file")
+        %{file: file_path, score: 0, feedback: nil, passed: false, error: :empty}
+
+      {:ok, code} ->
+        grade_file_content(code, file_path, phase, focus, interactive)
+    end
+  end
+
+  defp grade_file_content(code, file_path, phase, focus, interactive) do
     # Use Code Review Agent
     result =
       case LabsJidoAgent.CodeReviewAgent.review(code, phase: phase, focus: focus) do

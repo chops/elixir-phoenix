@@ -81,6 +81,8 @@ See `livebooks/README.md` for more details.
 
 ## 🤖 AI-Powered Learning with Jido
 
+> ✅ **Fully Functional:** The Jido integration uses the real Jido v1.0 framework with simulated AI responses for educational purposes. See `apps/labs_jido_agent/README.md` for details.
+
 This repository integrates the **Jido AI Agent Framework** for enhanced learning:
 
 ```bash

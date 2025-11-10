@@ -2,10 +2,13 @@ defmodule LivebookExtensions.JidoAssistant do
   @moduledoc """
   A Livebook Smart Cell for interactive AI assistance while learning.
 
-  This smart cell integrates the Jido Study Buddy Agent directly into Livebook,
-  providing contextualized help, explanations, and guidance.
+  ⚠️ **UI NOT IMPLEMENTED**
+  This Smart Cell currently lacks UI rendering (`handle_ui/2` callback).
+  It generates working code but the form interface is not implemented.
 
-  ## Features
+  **Workaround:** Use the Mix task instead: `mix jido.ask "Your question here"`
+
+  ## Features (code generation works)
 
   - Ask questions about Elixir concepts
   - Get explanations, examples, or Socratic guidance

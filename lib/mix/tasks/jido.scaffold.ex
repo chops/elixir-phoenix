@@ -140,6 +140,7 @@ defmodule Mix.Tasks.Jido.Scaffold do
     Mix.shell().info("Examples:")
     Mix.shell().info("  mix jido.scaffold --type genserver --name Counter --phase 3")
     Mix.shell().info("  mix jido.scaffold --type genserver --name Cache --phase 3 --features ttl")
+
     Mix.shell().info(
       "  mix jido.scaffold --type worker_pool --name TaskRunner --phase 4 --features telemetry"
     )
@@ -391,21 +392,24 @@ defmodule Mix.Tasks.Jido.Scaffold do
       # TODO: Add your tests here
 
       #{if has_property_tests do
-        """
-        property "property test example" do
-          check all value <- integer() do
-            # TODO: Implement property test
-            assert true
-          end
+      """
+      property "property test example" do
+        check all value <- integer() do
+          # TODO: Implement property test
+          assert true
         end
-        """
-      else
-        ""
-      end}
+      end
+      """
+    else
+      ""
+    end}
     end
     """
 
-    File.write!(Path.join([app_path, "test", "#{Macro.underscore(name)}_server_test.exs"]), content)
+    File.write!(
+      Path.join([app_path, "test", "#{Macro.underscore(name)}_server_test.exs"]),
+      content
+    )
 
     # test_helper
     File.write!(Path.join([app_path, "test", "test_helper.exs"]), "ExUnit.start()\n")

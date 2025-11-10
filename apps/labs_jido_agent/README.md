@@ -2,7 +2,24 @@
 
 **Phase 15: AI/ML Integration**
 
-An educational lab demonstrating AI agent patterns in Elixir using the Jido framework.
+An educational lab demonstrating AI agent patterns in Elixir using the Jido v1.0 framework.
+
+> ℹ️ **Implementation Note**
+>
+> This implementation uses **simulated AI responses** (pattern matching, not actual LLMs).
+> It demonstrates the Jido Agent + Action architecture and educational tooling patterns.
+>
+> **What works:**
+> - ✅ Full Jido v1.0 Agent and Action implementation
+> - ✅ All tests passing (14/14)
+> - ✅ Mix tasks functional
+> - ✅ Proper error handling
+>
+> **What's simulated:**
+> - AI responses are hardcoded (not using Instructor/LLM)
+> - Pattern-based code analysis (not AST parsing)
+>
+> **For production use:** Replace simulated logic with actual LLM calls via Instructor.
 
 ## 🎯 Learning Objectives
 

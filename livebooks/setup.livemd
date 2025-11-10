@@ -7,6 +7,7 @@ Welcome to the interactive learning experience for Elixir Systems Mastery! This 
 **What is Livebook?**
 
 Livebook is an interactive, collaborative notebook for Elixir that allows you to:
+
 * Execute code directly in your browser
 * Visualize data and results in real-time
 * Share reproducible examples
@@ -15,6 +16,8 @@ Livebook is an interactive, collaborative notebook for Elixir that allows you to
 For more information, visit [https://livebook.dev](https://livebook.dev)
 
 <!-- livebook:{"break_markdown":true} -->
+
+
 
 ## Environment Check
 
@@ -38,7 +41,7 @@ end
 :ok
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## How to Use Livebooks
 
@@ -63,6 +66,8 @@ end
 4. **Track progress**: Use the dashboard to monitor your completion status
 
 <!-- livebook:{"break_markdown":true} -->
+
+
 
 ## Repository Structure
 
@@ -90,6 +95,8 @@ livebooks/
 ```
 
 <!-- livebook:{"break_markdown":true} -->
+
+
 
 ## Quick Start Tutorial
 
@@ -135,7 +142,7 @@ else
 end
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Prerequisites
 
@@ -148,46 +155,57 @@ Before starting Phase 1, ensure you have completed:
 
 <!-- livebook:{"break_markdown":true} -->
 
+
+
 ## Start Learning: Phase 1
 
 Phase 1 covers Elixir Core fundamentals through 7 interactive checkpoints:
 
 1. **[Pattern Matching & Guards](phase-01-core/01-pattern-matching.livemd)**
+
    * Master pattern matching on tuples, lists, and maps
    * Learn when to use guards vs pattern matching
    * Practice with multiple function heads
 
 2. **[Recursion & Tail-Call Optimization](phase-01-core/02-recursion.livemd)**
+
    * Understand tail vs non-tail recursion
    * Use accumulators for optimization
    * Implement core list operations
 
 3. **[Enum vs Stream](phase-01-core/03-enum-stream.livemd)**
+
    * Choose between eager and lazy evaluation
    * Build pipeline transformations
    * Process large files efficiently
 
 4. **[Error Handling](phase-01-core/04-error-handling.livemd)**
+
    * Use tagged tuples instead of exceptions
    * Build `with` chains for success paths
    * Handle errors gracefully
 
 5. **[Property-Based Testing](phase-01-core/05-property-testing.livemd)**
+
    * Identify invariant properties
    * Write tests with StreamData
    * Find edge cases automatically
 
 6. **[Pipe Operator & Data Structures](phase-01-core/06-pipe-operator.livemd)**
+
    * Master the pipe operator `|>`
    * Choose appropriate data structures
    * Parse CSV with binary patterns
 
 7. **[Advanced Patterns](phase-01-core/07-advanced-patterns.livemd)**
+
    * Combine all Phase 1 concepts
    * Build a streaming statistics calculator
    * Complete the final challenge
 
 <!-- livebook:{"break_markdown":true} -->
+
+
 
 ## Progress Tracking
 
@@ -196,12 +214,15 @@ Monitor your learning journey with the interactive dashboard:
 **[Open Progress Dashboard →](dashboard.livemd)**
 
 The dashboard shows:
+
 * Completion status for all 15 phases
 * Visual progress charts
 * Quick navigation to any checkpoint
 * Self-assessment tracking
 
 <!-- livebook:{"break_markdown":true} -->
+
+
 
 ## Additional Resources
 
@@ -212,6 +233,8 @@ The dashboard shows:
 * **Repository Documentation**: See `docs/` directory for additional study guides
 
 <!-- livebook:{"break_markdown":true} -->
+
+
 
 ## Ready to Start?
 

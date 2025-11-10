@@ -2,9 +2,9 @@
   # Phoenix development environment with devenv
 
   packages = with pkgs; [
-    # Elixir & Erlang
-    elixir_1_17
-    erlang_27
+    # Elixir & Erlang (using beam packages for compatibility)
+    beam.packages.erlang_27.elixir
+    beam.packages.erlang_27.erlang
 
     # Language server for Emacs LSP
     elixir-ls

@@ -26,7 +26,7 @@ defmodule ElixirSystemsMastery.MixProject do
   defp deps do
     [
       # Dev/test tools
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false, override: true},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},

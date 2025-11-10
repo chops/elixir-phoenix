@@ -1,5 +1,8 @@
 name: Jido AI Code Review
 
+# ℹ️ This workflow uses Jido v1.0 agents with simulated AI responses
+# It provides educational code review feedback via pattern matching
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -40,12 +43,20 @@ jobs:
       - name: Run Jido Code Review
         id: review
         run: |
+          set +e  # Don't exit on errors
+
           # Detect which files changed
-          git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.ex$' || true)
+          git fetch origin "${{ github.base_ref }}" || {
+            echo "Failed to fetch base branch"
+            echo "No review output generated" > review_output.txt
+            exit 0
+          }
+
+          CHANGED_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep '\.ex$' || true)
 
           if [ -z "$CHANGED_FILES" ]; then
             echo "No Elixir files changed"
+            echo "No Elixir files changed in this PR" > review_output.txt
             exit 0
           fi
 
@@ -54,9 +65,13 @@ jobs:
 
           # Run jido.grade on changed files
           # Note: This is a simplified version - full implementation would review individual files
-          mix jido.grade --interactive > review_output.txt 2>&1 || true
+          mix jido.grade --interactive > review_output.txt 2>&1
+          GRADE_EXIT=$?
 
           cat review_output.txt
+
+          echo "Jido grade exit code: $GRADE_EXIT"
+          exit 0  # Always succeed so we can post comments
 
       - name: Post review comment
         if: always()
