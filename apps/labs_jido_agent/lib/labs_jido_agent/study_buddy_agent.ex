@@ -48,9 +48,10 @@ defmodule LabsJidoAgent.StudyBuddyAgent do
   def ask(question, opts \\ []) do
     phase = Keyword.get(opts, :phase, 1)
     mode = Keyword.get(opts, :mode, :explain)
+    use_llm = Keyword.get(opts, :use_llm, true)
 
     # Build params and call action directly for convenience
-    params = %{question: question, phase: phase, mode: mode}
+    params = %{question: question, phase: phase, mode: mode, use_llm: use_llm}
     LabsJidoAgent.StudyBuddyAction.run(params, %{})
   end
 end

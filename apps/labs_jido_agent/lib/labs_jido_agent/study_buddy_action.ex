@@ -17,7 +17,7 @@ defmodule LabsJidoAgent.StudyBuddyAction do
     name: "study_buddy",
     description: "Answers questions about Elixir concepts and guides learning",
     category: "education",
-    tags: ["qa", "elixir", "learning"],
+    tags: ["qa", "elixir", "learning", "llm"],
     schema: [
       question: [type: :string, required: true, doc: "The student's question"],
       phase: [type: :integer, default: 1, doc: "Current learning phase"],
@@ -25,15 +25,83 @@ defmodule LabsJidoAgent.StudyBuddyAction do
         type: {:in, [:explain, :socratic, :example]},
         default: :explain,
         doc: "Response mode"
-      ]
+      ],
+      use_llm: [type: :boolean, default: true, doc: "Use LLM if available"]
     ]
+
+  alias LabsJidoAgent.{LLM, Schemas}
 
   @impl true
   def run(params, _context) do
     question = params.question
     phase = params.phase
     mode = params.mode
+    use_llm = params.use_llm
 
+    if use_llm and LLM.available?() do
+      llm_answer(question, phase, mode)
+    else
+      simulated_answer(question, phase, mode)
+    end
+  end
+
+  # LLM-powered Q&A
+  defp llm_answer(question, phase, mode) do
+    prompt = build_study_prompt(question, phase, mode)
+
+    case LLM.chat_structured(prompt,
+           response_model: Schemas.StudyResponse,
+           model: :balanced,
+           temperature: 0.7
+         ) do
+      {:ok, %Schemas.StudyResponse{} = response} ->
+        {:ok,
+         %{
+           answer: response.answer,
+           concepts: response.concepts || [],
+           resources: response.resources || [],
+           follow_ups: response.follow_ups || [],
+           llm_powered: true
+         }}
+
+      {:error, reason} ->
+        IO.warn("LLM answer failed: #{inspect(reason)}, falling back to simulated")
+        simulated_answer(question, phase, mode)
+    end
+  end
+
+  defp build_study_prompt(question, phase, mode) do
+    mode_instruction =
+      case mode do
+        :explain ->
+          "Provide a clear, direct explanation with examples."
+
+        :socratic ->
+          "Guide learning through thoughtful questions. Help the student discover the answer."
+
+        :example ->
+          "Provide working code examples with explanations."
+      end
+
+    """
+    You are a helpful Elixir programming tutor for a student in Phase #{phase} of learning.
+
+    Student's question: #{question}
+
+    Response mode: #{mode_instruction}
+
+    Provide:
+    1. A helpful answer appropriate for their learning phase
+    2. Key concepts involved (as a list)
+    3. Relevant learning resources
+    4. Follow-up questions or topics to explore next
+
+    Be encouraging and educational. Keep explanations clear and appropriate for Phase #{phase}.
+    """
+  end
+
+  # Simulated Q&A (fallback)
+  defp simulated_answer(question, phase, mode) do
     # Determine what concepts are involved
     concepts = extract_concepts(question)
 
@@ -52,7 +120,8 @@ defmodule LabsJidoAgent.StudyBuddyAction do
       answer: answer,
       concepts: concepts,
       resources: resources,
-      follow_ups: generate_follow_ups(concepts, phase)
+      follow_ups: generate_follow_ups(concepts, phase),
+      llm_powered: false
     }
 
     {:ok, response}
@@ -285,7 +354,8 @@ defmodule LabsJidoAgent.StudyBuddyAction do
     params = %{
       question: question,
       phase: Keyword.get(opts, :phase, 1),
-      mode: Keyword.get(opts, :mode, :explain)
+      mode: Keyword.get(opts, :mode, :explain),
+      use_llm: Keyword.get(opts, :use_llm, true)
     }
 
     run(params, %{})

@@ -61,9 +61,10 @@ defmodule LabsJidoAgent.CodeReviewAgent do
   def review(code, opts \\ []) do
     phase = Keyword.get(opts, :phase, 1)
     focus = Keyword.get(opts, :focus, :all)
+    use_llm = Keyword.get(opts, :use_llm, true)
 
     # Build params and call action directly for convenience
-    params = %{code: code, phase: phase, focus: focus}
+    params = %{code: code, phase: phase, focus: focus, use_llm: use_llm}
     LabsJidoAgent.CodeReviewAction.run(params, %{})
   end
 end

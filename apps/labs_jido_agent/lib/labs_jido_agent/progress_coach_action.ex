@@ -18,20 +18,103 @@ defmodule LabsJidoAgent.ProgressCoachAction do
     name: "progress_coach",
     description: "Analyzes learning progress and provides personalized guidance",
     category: "education",
-    tags: ["progress", "coaching", "analytics"],
+    tags: ["progress", "coaching", "analytics", "llm"],
     schema: [
       student_id: [type: :string, required: true, doc: "Student identifier"],
-      progress_data: [type: :map, default: %{}, doc: "Progress JSON data (optional)"]
+      progress_data: [type: :map, default: %{}, doc: "Progress JSON data (optional)"],
+      use_llm: [type: :boolean, default: true, doc: "Use LLM if available"]
     ]
+
+  alias LabsJidoAgent.{LLM, Schemas}
 
   @impl true
   def run(params, _context) do
     student_id = params.student_id
     progress_data = params.progress_data
+    use_llm = params.use_llm
 
     # Load progress from file if not provided
     progress = if progress_data == %{}, do: load_progress(), else: progress_data
 
+    if use_llm and LLM.available?() do
+      llm_coaching(student_id, progress)
+    else
+      simulated_coaching(student_id, progress)
+    end
+  end
+
+  # LLM-powered coaching
+  defp llm_coaching(student_id, progress) do
+    # Analyze for context
+    analysis = analyze_student_progress(progress)
+    prompt = build_coaching_prompt(student_id, analysis)
+
+    case LLM.chat_structured(prompt,
+           response_model: Schemas.ProgressAnalysis,
+           model: :balanced,
+           temperature: 0.6
+         ) do
+      {:ok, %Schemas.ProgressAnalysis{} = coach_response} ->
+        result = %{
+          student_id: student_id,
+          recommendations:
+            Enum.map(coach_response.recommendations, &recommendation_to_map/1),
+          next_phase: suggest_next_phase(analysis),
+          review_areas: identify_review_areas(analysis),
+          strengths: coach_response.strengths || analysis.strengths,
+          challenges: coach_response.challenges || [],
+          estimated_time_to_next: estimate_time_to_completion(analysis, suggest_next_phase(analysis)),
+          llm_powered: true
+        }
+
+        {:ok, result}
+
+      {:error, reason} ->
+        IO.warn("LLM coaching failed: #{inspect(reason)}, falling back to simulated")
+        simulated_coaching(student_id, progress)
+    end
+  end
+
+  defp build_coaching_prompt(student_id, analysis) do
+    completion = round(analysis.overall_completion)
+
+    phase_summary =
+      analysis.phase_stats
+      |> Enum.take(5)
+      |> Enum.map_join("\n", fn stat ->
+        "- #{stat.phase}: #{round(stat.percentage)}% complete (#{stat.completed}/#{stat.total})"
+      end)
+
+    """
+    You are an encouraging programming coach analyzing a student's progress.
+
+    Student ID: #{student_id}
+    Overall completion: #{completion}%
+
+    Progress by phase:
+    #{phase_summary}
+
+    Provide personalized coaching:
+    1. Specific recommendations (with priority and actionable steps)
+    2. Strengths to celebrate
+    3. Challenges to address
+    4. Next phase suggestion with reasoning
+
+    Be encouraging, specific, and actionable. Focus on growth mindset and achievable goals.
+    """
+  end
+
+  defp recommendation_to_map(%Schemas.ProgressRecommendation{} = rec) do
+    %{
+      priority: rec.priority,
+      type: rec.type,
+      message: rec.message,
+      action: rec.action
+    }
+  end
+
+  # Simulated coaching (fallback)
+  defp simulated_coaching(student_id, progress) do
     # Analyze current state
     analysis = analyze_student_progress(progress)
 
@@ -51,7 +134,8 @@ defmodule LabsJidoAgent.ProgressCoachAction do
       review_areas: review_areas,
       strengths: analysis.strengths,
       challenges: analysis.challenges,
-      estimated_time_to_next: estimate_time_to_completion(analysis, next_phase)
+      estimated_time_to_next: estimate_time_to_completion(analysis, next_phase),
+      llm_powered: false
     }
 
     {:ok, result}
@@ -231,8 +315,15 @@ defmodule LabsJidoAgent.ProgressCoachAction do
   end
 
   defp suggest_next_phase(analysis) do
-    if analysis.current_phase do
-      if analysis.current_phase.percentage >= 80 do
+    cond do
+      is_nil(analysis.current_phase) ->
+        %{
+          phase: "phase-01-core",
+          reason: "Start here for Elixir fundamentals",
+          prerequisite_met: true
+        }
+
+      analysis.current_phase.percentage >= 80 ->
         current_index =
           Enum.find_index(get_all_phases(), fn p -> p == analysis.current_phase.phase end)
 
@@ -243,19 +334,13 @@ defmodule LabsJidoAgent.ProgressCoachAction do
           reason: "You've completed #{round(analysis.current_phase.percentage)}% of #{analysis.current_phase.phase}",
           prerequisite_met: true
         }
-      else
+
+      true ->
         %{
           phase: analysis.current_phase.phase,
           reason: "Complete remaining checkpoints first",
           prerequisite_met: false
         }
-      end
-    else
-      %{
-        phase: "phase-01-core",
-        reason: "Start here for Elixir fundamentals",
-        prerequisite_met: true
-      }
     end
   end
 
@@ -293,10 +378,11 @@ defmodule LabsJidoAgent.ProgressCoachAction do
       {:ok, advice} = LabsJidoAgent.ProgressCoachAction.analyze_progress("student_123")
       IO.inspect(advice.recommendations)
   """
-  def analyze_progress(student_id, progress_data \\ %{}) do
+  def analyze_progress(student_id, progress_data \\ %{}, opts \\ []) do
     params = %{
       student_id: student_id,
-      progress_data: progress_data
+      progress_data: progress_data,
+      use_llm: Keyword.get(opts, :use_llm, true)
     }
 
     run(params, %{})

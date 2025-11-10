@@ -36,9 +36,11 @@ defmodule LabsJidoAgent.ProgressCoachAgent do
       IO.inspect(advice.recommendations)
       IO.inspect(advice.next_phase)
   """
-  def analyze_progress(student_id, progress_data \\ %{}) do
+  def analyze_progress(student_id, progress_data \\ %{}, opts \\ []) do
+    use_llm = Keyword.get(opts, :use_llm, true)
+
     # Build params and call action directly for convenience
-    params = %{student_id: student_id, progress_data: progress_data}
+    params = %{student_id: student_id, progress_data: progress_data, use_llm: use_llm}
     LabsJidoAgent.ProgressCoachAction.run(params, %{})
   end
 end
