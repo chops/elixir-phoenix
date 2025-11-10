@@ -86,7 +86,6 @@ defmodule LivebookExtensions.JidoAssistant do
       question = \"\"\"
       #{question}
       \"\"\"
-
       case LabsJidoAgent.StudyBuddyAgent.ask(question, phase: #{phase}, mode: :#{mode}) do
         {:ok, response} ->
           # Display answer

@@ -50,15 +50,15 @@ defmodule LabsJidoAgent.LLM do
     get_model_for_provider(provider(), tier)
   end
 
-  defp get_model_for_provider(:openai, :fast), do: "gpt-3.5-turbo"
-  defp get_model_for_provider(:openai, :balanced), do: "gpt-4-turbo-preview"
-  defp get_model_for_provider(:openai, :smart), do: "gpt-4"
-  defp get_model_for_provider(:anthropic, :fast), do: "claude-3-haiku-20240307"
-  defp get_model_for_provider(:anthropic, :balanced), do: "claude-3-sonnet-20240229"
-  defp get_model_for_provider(:anthropic, :smart), do: "claude-3-5-sonnet-20241022"
-  defp get_model_for_provider(:gemini, :fast), do: "gemini-1.5-flash"
-  defp get_model_for_provider(:gemini, :balanced), do: "gemini-1.5-pro"
-  defp get_model_for_provider(:gemini, :smart), do: "gemini-1.5-pro"
+  defp get_model_for_provider(:openai, :fast), do: "gpt-5-nano"
+  defp get_model_for_provider(:openai, :balanced), do: "gpt-5-mini"
+  defp get_model_for_provider(:openai, :smart), do: "gpt-5"
+  defp get_model_for_provider(:anthropic, :fast), do: "claude-haiku-4-5"
+  defp get_model_for_provider(:anthropic, :balanced), do: "claude-sonnet-4-5"
+  defp get_model_for_provider(:anthropic, :smart), do: "claude-opus-4-1"
+  defp get_model_for_provider(:gemini, :fast), do: "gemini-2.5-flash"
+  defp get_model_for_provider(:gemini, :balanced), do: "gemini-2.5-flash"
+  defp get_model_for_provider(:gemini, :smart), do: "gemini-2.5-pro"
 
   @doc """
   Simple chat completion returning text response.
