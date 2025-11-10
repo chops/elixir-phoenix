@@ -1,0 +1,486 @@
+# Introduction to Jido AI Agents
+
+## Learning Objectives
+
+By the end of this checkpoint, you will:
+
+* Understand agent-based architecture
+* Learn the plan → act → observe lifecycle
+* Build your first Jido agent
+* Integrate agents with Elixir systems
+* Understand when to use agents vs other patterns
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Setup
+
+```elixir
+Mix.install([
+  {:jido, "~> 1.0"},
+  {:jason, "~> 1.4"},
+  {:kino, "~> 0.12"}
+])
+```
+
+## Concept: What are AI Agents?
+
+**AI Agents** are autonomous entities that can:
+- **Perceive** their environment (observe)
+- **Decide** what actions to take (plan)
+- **Act** on those decisions (execute)
+- **Learn** from outcomes (observe feedback)
+
+In the Jido framework, agents follow a structured lifecycle: **Plan → Act → Observe**
+
+<!-- livebook:{"break_markdown":true} -->
+
+## The Agent Lifecycle
+
+```elixir
+Kino.Markdown.new("""
+### Plan → Act → Observe
+
+```mermaid
+graph LR
+    A[Directive] --> B[Plan]
+    B --> C[Act]
+    C --> D[Observe]
+    D --> E[Signals]
+```
+
+**1. Plan** - Analyze the directive and create an execution plan
+**2. Act** - Execute the plan and generate results
+**3. Observe** - Analyze results and emit signals
+""")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Your First Agent: Hello World
+
+Let's build a simple agent that greets users:
+
+```elixir
+defmodule HelloAgent do
+  use Jido.Agent,
+    name: "hello_agent",
+    description: "Greets users with personalized messages",
+    schema: [
+      name: [type: :string, required: true, doc: "User's name"],
+      language: [type: :string, default: "en", doc: "Language code"]
+    ]
+
+  alias Jido.Agent.{Directive, Signal}
+
+  @impl Jido.Agent
+  def plan(agent, directive) do
+    name = Directive.get_param(directive, :name)
+    language = Directive.get_param(directive, :language, "en")
+
+    # Create the greeting plan
+    plan = %{
+      name: name,
+      language: language,
+      greeting_template: get_template(language)
+    }
+
+    {:ok, Agent.put_plan(agent, plan)}
+  end
+
+  @impl Jido.Agent
+  def act(agent) do
+    plan = Agent.get_plan(agent)
+
+    # Generate the greeting
+    greeting = String.replace(plan.greeting_template, "{name}", plan.name)
+
+    result = %{
+      greeting: greeting,
+      language: plan.language,
+      timestamp: DateTime.utc_now()
+    }
+
+    {:ok, Agent.put_result(agent, result)}
+  end
+
+  @impl Jido.Agent
+  def observe(agent) do
+    result = Agent.get_result(agent)
+
+    # Create observation
+    observations = %{
+      greeting_length: String.length(result.greeting),
+      language_used: result.language
+    }
+
+    signal = Signal.new(:greeting_sent, observations)
+    {:ok, agent, [signal]}
+  end
+
+  ## Private functions
+
+  defp get_template("en"), do: "Hello, {name}! Welcome to Jido agents."
+  defp get_template("es"), do: "¡Hola, {name}! Bienvenido a los agentes Jido."
+  defp get_template("fr"), do: "Bonjour, {name}! Bienvenue aux agents Jido."
+  defp get_template(_), do: "Hello, {name}!"
+end
+
+:ok
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Running the Agent
+
+Now let's run our agent:
+
+```elixir
+# Create a directive
+directive = Jido.Agent.Directive.new(:greet, params: %{name: "Alice", language: "en"})
+
+# Run the agent
+{:ok, agent_result} = Jido.Agent.run(HelloAgent, directive)
+
+# Get the greeting
+result = Jido.Agent.get_result(agent_result)
+IO.puts(result.greeting)
+```
+
+Try changing the language to "es" or "fr" and re-evaluate!
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Interactive Exercise 1.1: Modify the Agent
+
+Add support for more languages:
+
+```elixir
+defmodule HelloAgentExtended do
+  use Jido.Agent,
+    name: "hello_agent_extended",
+    description: "Greets users in multiple languages",
+    schema: [
+      name: [type: :string, required: true],
+      language: [type: :string, default: "en"]
+    ]
+
+  alias Jido.Agent.{Directive, Signal}
+
+  @impl Jido.Agent
+  def plan(agent, directive) do
+    name = Directive.get_param(directive, :name)
+    language = Directive.get_param(directive, :language, "en")
+
+    plan = %{
+      name: name,
+      language: language,
+      greeting_template: get_template(language)
+    }
+
+    {:ok, Agent.put_plan(agent, plan)}
+  end
+
+  @impl Jido.Agent
+  def act(agent) do
+    plan = Agent.get_plan(agent)
+    greeting = String.replace(plan.greeting_template, "{name}", plan.name)
+
+    result = %{
+      greeting: greeting,
+      language: plan.language
+    }
+
+    {:ok, Agent.put_result(agent, result)}
+  end
+
+  @impl Jido.Agent
+  def observe(agent) do
+    result = Agent.get_result(agent)
+
+    observations = %{
+      greeting_length: String.length(result.greeting)
+    }
+
+    signal = Signal.new(:greeting_sent, observations)
+    {:ok, agent, [signal]}
+  end
+
+  ## TODO: Add more language templates!
+  defp get_template("en"), do: "Hello, {name}!"
+  defp get_template("es"), do: "¡Hola, {name}!"
+  defp get_template("fr"), do: "Bonjour, {name}!"
+  defp get_template("de"), do: "Guten Tag, {name}!"
+  defp get_template("ja"), do: "こんにちは、{name}さん!"
+  defp get_template(_), do: "Hello, {name}!"
+end
+
+# Test it
+directive = Jido.Agent.Directive.new(:greet, params: %{name: "Bob", language: "de"})
+{:ok, agent} = Jido.Agent.run(HelloAgentExtended, directive)
+result = Jido.Agent.get_result(agent)
+IO.puts(result.greeting)
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Real-World Example: Code Review Agent
+
+Let's look at a practical agent from labs_jido_agent:
+
+```elixir
+# This demonstrates the Code Review Agent concept
+# (Simplified version - see labs_jido_agent for full implementation)
+
+defmodule SimpleCodeReviewAgent do
+  use Jido.Agent,
+    name: "code_reviewer",
+    description: "Reviews Elixir code for basic issues",
+    schema: [
+      code: [type: :string, required: true]
+    ]
+
+  alias Jido.Agent.{Directive, Signal}
+
+  @impl Jido.Agent
+  def plan(agent, directive) do
+    code = Directive.get_param(directive, :code)
+
+    plan = %{
+      code: code,
+      checks: [:documentation, :pattern_matching, :tail_recursion]
+    }
+
+    {:ok, Agent.put_plan(agent, plan)}
+  end
+
+  @impl Jido.Agent
+  def act(agent) do
+    plan = Agent.get_plan(agent)
+
+    # Simple code analysis
+    issues = []
+
+    issues =
+      if not String.contains?(plan.code, "@doc") do
+        [%{type: :quality, message: "Missing documentation"} | issues]
+      else
+        issues
+      end
+
+    issues =
+      if String.contains?(plan.code, "+ sum(") do
+        [%{type: :performance, message: "Non-tail-recursive function"} | issues]
+      else
+        issues
+      end
+
+    result = %{
+      issues: issues,
+      score: calculate_score(issues)
+    }
+
+    {:ok, Agent.put_result(agent, result)}
+  end
+
+  @impl Jido.Agent
+  def observe(agent) do
+    result = Agent.get_result(agent)
+
+    observations = %{
+      issues_found: length(result.issues),
+      passing: result.score >= 80
+    }
+
+    signal = Signal.new(:review_complete, observations)
+    {:ok, agent, [signal]}
+  end
+
+  defp calculate_score(issues) do
+    max(0, 100 - length(issues) * 10)
+  end
+end
+
+# Test it
+code = """
+defmodule BadExample do
+  def sum([]), do: 0
+  def sum([h | t]), do: h + sum(t)
+end
+"""
+
+directive = Jido.Agent.Directive.new(:review, params: %{code: code})
+{:ok, agent} = Jido.Agent.run(SimpleCodeReviewAgent, directive)
+result = Jido.Agent.get_result(agent)
+
+IO.inspect(result, label: "Review Result")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Exercise 1.2: Build a Calculator Agent
+
+Create an agent that performs calculations and tracks statistics:
+
+```elixir
+defmodule CalculatorAgent do
+  use Jido.Agent,
+    name: "calculator",
+    description: "Performs calculations and tracks usage",
+    schema: [
+      operation: [type: {:in, [:add, :subtract, :multiply, :divide]}, required: true],
+      a: [type: :number, required: true],
+      b: [type: :number, required: true]
+    ]
+
+  alias Jido.Agent.{Directive, Signal}
+
+  @impl Jido.Agent
+  def plan(agent, directive) do
+    # TODO: Extract parameters and create plan
+    operation = Directive.get_param(directive, :operation)
+    a = Directive.get_param(directive, :a)
+    b = Directive.get_param(directive, :b)
+
+    plan = %{
+      operation: operation,
+      a: a,
+      b: b
+    }
+
+    {:ok, Agent.put_plan(agent, plan)}
+  end
+
+  @impl Jido.Agent
+  def act(agent) do
+    # TODO: Perform the calculation
+    plan = Agent.get_plan(agent)
+
+    result_value =
+      case plan.operation do
+        :add -> plan.a + plan.b
+        :subtract -> plan.a - plan.b
+        :multiply -> plan.a * plan.b
+        :divide when plan.b != 0 -> plan.a / plan.b
+        :divide -> :error
+      end
+
+    result = %{
+      result: result_value,
+      operation: plan.operation
+    }
+
+    {:ok, Agent.put_result(agent, result)}
+  end
+
+  @impl Jido.Agent
+  def observe(agent) do
+    # TODO: Create observations
+    result = Agent.get_result(agent)
+
+    observations = %{
+      operation: result.operation,
+      success: result.result != :error
+    }
+
+    signal = Signal.new(:calculation_complete, observations)
+    {:ok, agent, [signal]}
+  end
+end
+
+# Test your calculator
+directive = Jido.Agent.Directive.new(:calculate, params: %{operation: :add, a: 5, b: 3})
+{:ok, agent} = Jido.Agent.run(CalculatorAgent, directive)
+result = Jido.Agent.get_result(agent)
+IO.puts("Result: #{result.result}")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Key Concepts Summary
+
+```elixir
+Kino.Markdown.new("""
+### Important Concepts
+
+**1. Directive**
+- Input to the agent
+- Contains action type and parameters
+- Created with `Directive.new(:action, params: %{...})`
+
+**2. Agent State**
+- Plan: What the agent will do
+- Result: What the agent produced
+- Accessed via `Agent.get_plan/1` and `Agent.get_result/1`
+
+**3. Signals**
+- Output events from the agent
+- Used for monitoring and coordination
+- Created with `Signal.new(:event_name, data)`
+
+**4. Lifecycle**
+- `plan/2` - Analyze input, create plan
+- `act/1` - Execute plan, produce result
+- `observe/1` - Analyze result, emit signals
+""")
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Self-Assessment
+
+```elixir
+form = Kino.Control.form(
+  [
+    lifecycle: {:checkbox, "I understand the plan → act → observe lifecycle"},
+    directives: {:checkbox, "I can create and use directives"},
+    state: {:checkbox, "I can manage agent state (plan and result)"},
+    signals: {:checkbox, "I understand how signals work"},
+    build_agent: {:checkbox, "I can build a basic Jido agent"}
+  ],
+  submit: "Check Progress"
+)
+
+Kino.render(form)
+
+Kino.listen(form, fn event ->
+  completed = event.data |> Map.values() |> Enum.count(& &1)
+  total = map_size(event.data)
+
+  progress_message =
+    if completed == total do
+      "🎉 Excellent! You've mastered Jido Agent basics!"
+    else
+      "Keep going! #{completed}/#{total} objectives complete"
+    end
+
+  Kino.Markdown.new("### Progress: #{progress_message}") |> Kino.render()
+end)
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Key Takeaways
+
+* **Agents** follow a structured lifecycle: plan → act → observe
+* **Directives** provide input and parameters to agents
+* **State management** happens through plan and result
+* **Signals** allow agents to communicate outcomes
+* Agents are **autonomous** - they make decisions based on their logic
+* Use agents when you need **structured decision-making** and **observable behavior**
+
+<!-- livebook:{"break_markdown":true} -->
+
+## Next Steps
+
+Ready to dive deeper? Continue to the next checkpoint:
+
+**[Continue to Checkpoint 2: Multi-Agent Systems →](02-multi-agent-systems.livemd)**
+
+Or explore the full agent implementations:
+- **Code Review Agent** - `apps/labs_jido_agent/lib/labs_jido_agent/code_review_agent.ex`
+- **Study Buddy Agent** - `apps/labs_jido_agent/lib/labs_jido_agent/study_buddy_agent.ex`
+- **Progress Coach Agent** - `apps/labs_jido_agent/lib/labs_jido_agent/progress_coach_agent.ex`
+
+---
+
+*Try building agents for your own use cases! What problems could benefit from agent-based solutions?* 🤖

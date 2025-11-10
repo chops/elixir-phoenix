@@ -1,0 +1,392 @@
+# Dialyzer Error Debugger
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12"},
+  {:kino_vega_lite, "~> 0.1"},
+  {:jason, "~> 1.4"}
+])
+```
+
+## Introduction
+
+This Livebook helps us systematically work through all Dialyzer errors in the project.
+
+**Integration with Mix Task:**
+
+* This Livebook loads data from `dialyzer_reports/dialyzer_status.json`
+* Run `mix dialyzer.analyze` to generate/update the tracker
+* Changes made here can be saved back to the tracker file
+
+## Load Data
+
+````elixir
+# Change to project directory
+project_dir = "/home/chops/src/elixir-phoenix"
+File.cd!(project_dir)
+
+tracker_file = Path.join(project_dir, "dialyzer_reports/dialyzer_status.json")
+
+# Load existing tracker or run analysis
+tracker = case File.read(tracker_file) do
+  {:ok, content} ->
+    Jason.decode!(content, keys: :atoms)
+  {:error, _} ->
+    Kino.Markdown.new("""
+    ⚠️ **No tracker file found!**
+
+    Run this first:
+    ```bash
+    mix dialyzer.analyze
+    ```
+    """) |> Kino.render()
+
+    %{errors: [], last_run: nil, total_count: 0, status_counts: %{new: 0, investigated: 0, fixed: 0}}
+end
+
+errors = tracker[:errors] || []
+
+Kino.Markdown.new("""
+## Loaded Tracker Data
+
+**Last Run:** #{tracker[:last_run] || "Never"}
+**Total Errors:** #{tracker[:total_count]}
+
+**Status Breakdown:**
+- 🆕 New: #{tracker[:status_counts][:new] || 0}
+- 🔍 Investigated: #{tracker[:status_counts][:investigated] || 0}
+- ✅ Fixed: #{tracker[:status_counts][:fixed] || 0}
+""")
+````
+
+```elixir
+# UI for marking errors
+mark_input = Kino.Input.text("Error IDs to mark (comma-separated)")
+status_input = Kino.Input.select("Status", [
+  {"New", :new},
+  {"Investigated", :investigated},
+  {"Fixed", :fixed}
+])
+mark_button = Kino.Control.button("Mark Errors")
+
+Kino.Layout.grid([mark_input, status_input, mark_button], columns: 3)
+```
+
+```elixir
+# Handle marking
+Kino.listen(mark_button, fn _event ->
+  ids_str = Kino.Input.read(mark_input)
+  status = Kino.Input.read(status_input)
+
+  if ids_str != "" do
+    ids = ids_str
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(&String.to_integer/1)
+
+    # Update tracker
+    updated_tracker = %{tracker |
+      errors: Enum.map(tracker.errors, fn error ->
+        if error.id in ids do
+          Map.put(error, :status, status)
+        else
+          error
+        end
+      end)
+    }
+
+    # Recalculate status counts
+    status_counts = updated_tracker.errors
+    |> Enum.group_by(& &1.status)
+    |> Map.new(fn {s, errs} -> {s, length(errs)} end)
+    |> Map.put_new(:new, 0)
+    |> Map.put_new(:investigated, 0)
+    |> Map.put_new(:fixed, 0)
+
+    updated_tracker = Map.put(updated_tracker, :status_counts, status_counts)
+
+    # Save tracker
+    File.write!(tracker_file, Jason.encode!(updated_tracker, pretty: true))
+
+    Kino.Markdown.new("""
+    ✅ **Updated #{length(ids)} errors to status: #{status}**
+
+    Re-evaluate the "Load Data" cell to see changes.
+    """) |> Kino.render()
+  else
+    Kino.Markdown.new("❌ Please enter error IDs") |> Kino.render()
+  end
+end)
+
+Kino.nothing()
+```
+
+```elixir
+# Group by error type
+by_type = Enum.group_by(errors, & &1.type)
+
+type_data = by_type
+|> Enum.map(fn {type, errs} ->
+  %{type: type, count: length(errs)}
+end)
+|> Enum.sort_by(& &1.count, :desc)
+
+VegaLite.new(width: 600, height: 300, title: "Errors by Type")
+|> VegaLite.data_from_values(type_data)
+|> VegaLite.mark(:bar)
+|> VegaLite.encode_field(:x, "type", type: :nominal, title: "Error Type")
+|> VegaLite.encode_field(:y, "count", type: :quantitative, title: "Count")
+```
+
+```elixir
+# Group by file
+by_file = Enum.group_by(errors, & &1.file)
+
+file_data = by_file
+|> Enum.map(fn {file, errs} ->
+  %{file: Path.basename(file), count: length(errs), location: hd(errs).location}
+end)
+|> Enum.sort_by(& &1.count, :desc)
+
+VegaLite.new(width: 600, height: 400, title: "Errors by File")
+|> VegaLite.data_from_values(file_data)
+|> VegaLite.mark(:bar)
+|> VegaLite.encode_field(:x, "file", type: :nominal, title: "File")
+|> VegaLite.encode_field(:y, "count", type: :quantitative, title: "Count")
+|> VegaLite.encode_field(:color, "location", type: :nominal,
+    scale: %{"range" => ["#e74c3c", "#3498db", "#95a5a6"]})
+```
+
+```elixir
+# Create a filterable table of errors
+error_table_data = errors
+|> Enum.with_index(1)
+|> Enum.map(fn {error, idx} ->
+  %{
+    "#" => idx,
+    "Type" => error.type,
+    "File" => Path.basename(error.file),
+    "Line" => error.line,
+    "Location" => error.location,
+    "Agent" => error.agent || "N/A"
+  }
+end)
+
+Kino.DataTable.new(error_table_data, name: "All Dialyzer Errors")
+```
+
+```elixir
+# Select an error to inspect
+error_selector = Kino.Input.select(
+  "Select error to inspect:",
+  errors
+  |> Enum.with_index(1)
+  |> Enum.map(fn {err, idx} ->
+    {"##{idx}: #{Path.basename(err.file)}:#{err.line} (#{err.type})", idx - 1}
+  end)
+)
+```
+
+````elixir
+selected_value = Kino.Input.read(error_selector)
+
+# Handle case where Kino returns the label instead of value
+selected_idx = if is_integer(selected_value) do
+  selected_value
+else
+  # Try to extract number from string like "#32: ..."
+  case Regex.run(~r/^#(\d+):/, to_string(selected_value)) do
+    [_, num_str] -> String.to_integer(num_str) - 1
+    _ -> nil
+  end
+end
+
+selected_error = if selected_idx, do: Enum.at(errors, selected_idx), else: nil
+
+if selected_error do
+  markdown = """
+  ## Error ##{selected_idx + 1}
+
+  **File:** #{selected_error.file}
+  **Line:** #{selected_error.line}
+  **Type:** #{selected_error.type}
+  **Location:** #{selected_error.location}
+  **Agent:** #{selected_error.agent || "N/A"}
+
+  ### Full Error Text
+
+  """ <> "```\n#{selected_error.full_text}\n```\n\n### Source Code Context\n"
+
+  Kino.Markdown.new(markdown)
+else
+  Kino.Markdown.new("No error selected")
+end
+````
+
+````elixir
+# Show source code around the error
+if selected_error do
+  file_path = Path.join(project_dir, selected_error.file)
+
+  if File.exists?(file_path) do
+    lines = File.read!(file_path) |> String.split("\n")
+
+    # Show 10 lines before and after
+    start_line = max(0, selected_error.line - 10)
+    end_line = min(length(lines), selected_error.line + 10)
+
+    context = lines
+    |> Enum.slice(start_line..end_line)
+    |> Enum.with_index(start_line + 1)
+    |> Enum.map(fn {line, num} ->
+      marker = if num == selected_error.line, do: ">>> ", else: "    "
+      "#{marker}#{num}: #{line}"
+    end)
+    |> Enum.join("\n")
+
+    Kino.Markdown.new("```elixir\n#{context}\n```")
+  else
+    Kino.Markdown.new("*File not found: #{file_path}*")
+  end
+else
+  Kino.Markdown.new("")
+end
+````
+
+```elixir
+# Group errors by category
+categories = %{
+  unused_functions: errors |> Enum.filter(&(&1.type == "unused_fun")),
+  contract_violations: errors |> Enum.filter(&(&1.type == "call")),
+  invalid_contracts: errors |> Enum.filter(&(&1.type == "invalid_contract")),
+  pattern_matches: errors |> Enum.filter(&(&1.type == "pattern_match")),
+  guard_fails: errors |> Enum.filter(&(&1.type == "guard_fail"))
+}
+
+Kino.Markdown.new("""
+## Error Categories
+
+### 1. Unused Functions (#{length(categories.unused_functions)})
+Functions that Dialyzer believes will never be called.
+
+### 2. Contract Violations (#{length(categories.contract_violations)})
+Function calls that don't match the declared @spec.
+
+### 3. Invalid Contracts (#{length(categories.invalid_contracts)})
+@spec declarations that don't match the actual function implementation.
+
+### 4. Pattern Matches (#{length(categories.pattern_matches)})
+Patterns that can never match based on type analysis.
+
+### 5. Guard Failures (#{length(categories.guard_fails)})
+Guard clauses that can never succeed.
+""")
+```
+
+```elixir
+# Separate framework and our code errors
+framework_errors = Enum.filter(errors, &(&1.location == :jido_framework))
+our_errors = Enum.filter(errors, &(&1.location == :our_code))
+
+Kino.Layout.tabs([
+  {"Jido Framework (#{length(framework_errors)})",
+    Kino.DataTable.new(
+      framework_errors
+      |> Enum.map(&%{
+        "Type" => &1.type,
+        "Line" => &1.line,
+        "Agent" => &1.agent || "N/A"
+      }),
+      name: "Framework Errors"
+    )
+  },
+  {"Our Code (#{length(our_errors)})",
+    Kino.DataTable.new(
+      our_errors
+      |> Enum.map(&%{
+        "File" => Path.basename(&1.file),
+        "Type" => &1.type,
+        "Line" => &1.line,
+        "Agent" => &1.agent || "N/A"
+      }),
+      name: "Our Code Errors"
+    )
+  }
+])
+```
+
+```elixir
+Kino.Markdown.new("""
+## Next Steps
+
+Based on the analysis above, here's what we can do:
+
+### Errors We Can Fix
+
+1. **Pattern Match Errors** - These may indicate real bugs in our code
+2. **Invalid Contracts in Our Code** - We can add proper @dialyzer directives
+
+### Errors That Are Framework Issues
+
+1. **Unused Functions** - These are in the Jido framework macro system
+2. **Contract Violations** - The `use Jido.Agent` macro generates code with mismatched specs
+
+### Decision Points
+
+- Can we add @dialyzer {:nowarn_function, ...} to our agent modules?
+- Should we override the generated specs?
+- Do we need to modify how we use `use Jido.Agent`?
+""")
+```
+
+```elixir
+refresh_button = Kino.Control.button("🔄 Re-run Dialyzer Analysis")
+```
+
+```elixir
+Kino.listen(refresh_button, fn _event ->
+  Kino.Markdown.new("Running `mix dialyzer.analyze`...") |> Kino.render()
+
+  {output, exit_code} = System.cmd("mix", ["dialyzer.analyze"],
+    stderr_to_stdout: true,
+    env: [{"MIX_ENV", "dev"}]
+  )
+
+  Kino.Markdown.new("""
+  ## ✅ Analysis Complete
+
+  **Exit Code:** #{exit_code}
+
+  ### Output:
+```
+
+#{String.slice(output, 0..1000)}
+
+```
+
+  **Re-evaluate the "Load Data" cell to see updated data.**
+  """) |> Kino.render()
+end)
+
+Kino.nothing()
+```
+
+```elixir
+Kino.Markdown.new("""
+## Terminal Commands
+
+Run these in your terminal:
+
+```
+
+mix dialyzer.analyze
+
+open dialyzer_reports/dialyzer_report.html
+
+mix dialyzer.analyze --mark-investigated 1,5,12
+
+mix dialyzer.analyze --mark-fixed 3,7
+
+```
+""")
+```

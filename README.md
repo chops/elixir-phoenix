@@ -79,6 +79,48 @@ make livebook
 
 See `livebooks/README.md` for more details.
 
+## 🤖 AI-Powered Learning with Jido
+
+> ✅ **Fully Functional:** The Jido integration uses the real Jido v1.0 framework with LLM-powered AI responses for enhanced learning. See `apps/labs_jido_agent/README.md` for details.
+
+This repository integrates the **Jido AI Agent Framework** for enhanced learning:
+
+```bash
+# Get AI help with Elixir concepts
+make jido-ask QUESTION="What is tail recursion?"
+
+# Grade your code with AI review
+make jido-grade
+
+# Interactive detailed feedback
+make jido-grade-interactive
+
+# Scaffold new projects with best practices
+make jido-scaffold TYPE=genserver NAME=Counter PHASE=3
+```
+
+**AI Agents Available:**
+
+- **Code Review Agent** - Analyzes code quality, finds issues, suggests improvements
+- **Study Buddy Agent** - Answers questions about Elixir concepts (explain/socratic/example modes)
+- **Progress Coach Agent** - Analyzes learning progress, provides personalized recommendations
+- **Jido Assistant** - Livebook Smart Cell for interactive help while coding
+
+**Example Usage:**
+
+```bash
+# Ask a question
+mix jido.ask "How do I use pattern matching?"
+
+# Grade your Phase 1 code
+mix jido.grade --phase 1 --interactive
+
+# Scaffold a new GenServer project
+mix jido.scaffold --type genserver --name UserCache --phase 3 --features ttl,telemetry
+```
+
+See `apps/labs_jido_agent/README.md` and `livebooks/phase-15-ai/` for complete documentation.
+
 ## 📚 Documentation
 
 - **[Roadmap](docs/roadmap.md)** - Learning phases and milestones

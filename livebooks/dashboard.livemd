@@ -6,6 +6,8 @@ Track your progress through all 15 phases of Elixir Systems Mastery.
 
 <!-- livebook:{"break_markdown":true} -->
 
+
+
 ## Setup
 
 ```elixir
@@ -160,8 +162,6 @@ Vl.new(width: 600, height: 400, title: "Learning Progress by Phase")
 
 ## Phase Details
 
-<!-- livebook:{"break_markdown":true} -->
-
 ### Phase 1: Elixir Core
 
 **Status:** Available Now
@@ -189,8 +189,6 @@ end)
 |> Enum.join("\n")}
 """)
 ```
-
-<!-- livebook:{"break_markdown":true} -->
 
 ### Phase 2-15: Coming Soon
 
