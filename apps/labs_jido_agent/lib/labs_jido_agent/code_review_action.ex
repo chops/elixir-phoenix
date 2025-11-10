@@ -65,10 +65,10 @@ defmodule LabsJidoAgent.CodeReviewAction do
            temperature: 0.3
          ) do
       {:ok, %Schemas.CodeReviewResponse{} = review} ->
-        # Convert Ecto schema to plain map
+        # Convert Ecto schema to plain map (issues are already maps now)
         feedback = %{
           score: review.score,
-          issues: Enum.map(review.issues, &issue_to_map/1),
+          issues: review.issues || [],
           suggestions: format_suggestions(review.suggestions, review.issues),
           aspects_reviewed: get_review_aspects(phase, focus),
           phase: phase,
@@ -112,23 +112,18 @@ defmodule LabsJidoAgent.CodeReviewAction do
     """
   end
 
-  defp issue_to_map(%Schemas.CodeIssue{} = issue) do
-    %{
-      type: issue.type,
-      severity: issue.severity,
-      line: issue.line,
-      message: issue.message,
-      suggestion: issue.suggestion
-    }
-  end
-
   defp format_suggestions(general_suggestions, issues) do
     issue_suggestions =
-      Enum.map(issues, fn issue ->
+      Enum.map(issues || [], fn issue ->
+        # Handle both map (from LLM) and struct (not used anymore) formats
+        type = if is_map(issue), do: Map.get(issue, "type") || Map.get(issue, :type), else: issue.type
+        message = if is_map(issue), do: Map.get(issue, "message") || Map.get(issue, :message), else: issue.message
+        suggestion = if is_map(issue), do: Map.get(issue, "suggestion") || Map.get(issue, :suggestion), else: issue.suggestion
+
         %{
-          original_issue: issue.message,
-          suggestion: issue.suggestion,
-          resources: get_resources_for_type(issue.type)
+          original_issue: message,
+          suggestion: suggestion,
+          resources: get_resources_for_type(type)
         }
       end)
 

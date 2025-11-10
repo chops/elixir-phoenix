@@ -103,7 +103,14 @@ defmodule LabsJidoAgent.LLM do
     temperature = Keyword.get(opts, :temperature, 0.7)
     max_retries = Keyword.get(opts, :max_retries, 2)
 
-    params = %{
+    # Get API key based on provider
+    api_key = case provider() do
+      :openai -> System.get_env("OPENAI_API_KEY")
+      :anthropic -> System.get_env("ANTHROPIC_API_KEY")
+      :gemini -> System.get_env("GEMINI_API_KEY")
+    end
+
+    params = [
       model: model_name(model),
       temperature: temperature,
       response_model: response_model,
@@ -111,9 +118,23 @@ defmodule LabsJidoAgent.LLM do
       messages: [
         %{role: "user", content: prompt}
       ]
-    }
+    ]
 
-    Instructor.chat_completion(params)
+    # Config with API key and options is passed as second argument
+    # API URL depends on provider
+    api_url = case provider() do
+      :openai -> "https://api.openai.com"
+      :anthropic -> "https://api.anthropic.com"
+      :gemini -> "https://generativelanguage.googleapis.com"
+    end
+
+    config = [
+      api_key: api_key,
+      api_url: api_url,
+      http_options: [receive_timeout: 60_000]
+    ]
+
+    Instructor.chat_completion(params, config)
   end
 
   @doc """

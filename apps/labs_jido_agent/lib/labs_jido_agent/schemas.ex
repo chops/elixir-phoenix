@@ -36,15 +36,14 @@ defmodule LabsJidoAgent.Schemas do
     embedded_schema do
       field(:score, :integer)
       field(:summary, :string)
-      embeds_many(:issues, CodeIssue)
+      field(:issues, {:array, :map})
       field(:suggestions, {:array, :string})
       field(:resources, {:array, :string})
     end
 
     def changeset(review, attrs) do
       review
-      |> cast(attrs, [:score, :summary, :suggestions, :resources])
-      |> cast_embed(:issues)
+      |> cast(attrs, [:score, :summary, :issues, :suggestions, :resources])
       |> validate_required([:score, :summary])
       |> validate_number(:score, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
     end
@@ -100,7 +99,7 @@ defmodule LabsJidoAgent.Schemas do
 
     @primary_key false
     embedded_schema do
-      embeds_many(:recommendations, ProgressRecommendation)
+      field(:recommendations, {:array, :map})
       field(:strengths, {:array, :string})
       field(:challenges, {:array, :string})
       field(:next_phase_suggestion, :string)
@@ -108,8 +107,7 @@ defmodule LabsJidoAgent.Schemas do
 
     def changeset(analysis, attrs) do
       analysis
-      |> cast(attrs, [:strengths, :challenges, :next_phase_suggestion])
-      |> cast_embed(:recommendations)
+      |> cast(attrs, [:recommendations, :strengths, :challenges, :next_phase_suggestion])
       |> validate_required([:recommendations])
     end
   end

@@ -104,12 +104,13 @@ defmodule LabsJidoAgent.ProgressCoachAction do
     """
   end
 
-  defp recommendation_to_map(%Schemas.ProgressRecommendation{} = rec) do
+  defp recommendation_to_map(rec) when is_map(rec) do
+    # Handle both map (from LLM) and struct formats
     %{
-      priority: rec.priority,
-      type: rec.type,
-      message: rec.message,
-      action: rec.action
+      priority: Map.get(rec, "priority") || Map.get(rec, :priority),
+      type: Map.get(rec, "type") || Map.get(rec, :type),
+      message: Map.get(rec, "message") || Map.get(rec, :message),
+      action: Map.get(rec, "action") || Map.get(rec, :action)
     }
   end
 
