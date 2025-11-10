@@ -11,6 +11,8 @@ By the end of this checkpoint, you will:
 
 <!-- livebook:{"break_markdown":true} -->
 
+
+
 ## Setup
 
 ```elixir
@@ -32,13 +34,14 @@ IO.puts("First: #{first}")
 IO.inspect(rest, label: "Rest")
 
 # Map pattern matching
-%{name: user_name, age: user_age} = %{name: "Alice", age: 30, city: "NYC"}
+%{name: user_name, age: user_age, city: user_city} = %{name: "Alice", age: 30, city: "NYC"}
 IO.puts("Name: #{user_name}, Age: #{user_age}")
+IO.puts("City: #{user_city}")
 
 :ok
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Concept: Guards
 
@@ -58,7 +61,7 @@ IO.puts("Is 15 an adult? #{AgeChecker.adult?(15)}")
 IO.puts("Is 'hello' an adult? #{AgeChecker.adult?("hello")}")
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Interactive Exercise 1.1: Complete the Pattern Match
 
@@ -84,7 +87,7 @@ IO.puts("Name: #{person_name}, Age: #{person_age}")
 :ok
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Interactive Exercise 1.2: Fix the Guards
 
@@ -121,7 +124,7 @@ IO.inspect(SafeMath.sqrt(16), label: "sqrt(16)")
 IO.inspect(SafeMath.sqrt(-4), label: "sqrt(-4)")
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Interactive Exercise 1.3: Pattern Match Challenge
 
@@ -156,7 +159,7 @@ IO.puts("Test 3: #{ResultHandler.unwrap(nil, 99)}")
 IO.puts("Test 4: #{ResultHandler.unwrap("invalid", -1)}")
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Advanced Pattern Matching
 
@@ -199,7 +202,7 @@ IO.inspect(PatternExamples.find_in_list([1, 2, 3], 1), label: "Find 1 in list")
 IO.inspect(PatternExamples.find_in_list([1, 2, 3], 2), label: "Find 2 in list")
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Self-Assessment
 
@@ -234,7 +237,7 @@ Kino.listen(form, fn event ->
 end)
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Practice Challenge
 
@@ -261,7 +264,7 @@ end
 :ok
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+
 
 ## Key Takeaways
 
@@ -272,6 +275,8 @@ end
 * Pattern matching happens at **compile time** when possible (more efficient!)
 
 <!-- livebook:{"break_markdown":true} -->
+
+
 
 ## Next Steps
 
