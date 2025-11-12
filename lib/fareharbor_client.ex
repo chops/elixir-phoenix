@@ -23,6 +23,7 @@ defmodule FareharborClient do
   """
 
   @base_url "https://fareharbor.com/api/external/v1"
+  @oauth_base_url "https://fareharbor.com"
 
   @doc """
   Exchanges an authorization code for an access token.
@@ -33,6 +34,7 @@ defmodule FareharborClient do
     - `opts` - Optional keyword list with:
       - `:client_id` - Override the configured client ID
       - `:client_secret` - Override the configured client secret
+      - `:redirect_uri` - The redirect URI used in the authorization request
 
   ## Returns
 
@@ -45,7 +47,7 @@ defmodule FareharborClient do
 
   ## Examples
 
-      iex> FareharborClient.get_access_token("AUTH_CODE_HERE")
+      iex> FareharborClient.get_access_token("AUTH_CODE_HERE", redirect_uri: "https://myapp.com/callback")
       {:ok, %{
         "access_token" => "eyJ0eXAiOiJKV1QiLCJhbGc...",
         "token_type" => "Bearer",
@@ -55,15 +57,18 @@ defmodule FareharborClient do
   def get_access_token(code, opts \\ []) do
     client_id = opts[:client_id] || get_config(:client_id)
     client_secret = opts[:client_secret] || get_config(:client_secret)
+    redirect_uri = opts[:redirect_uri] || get_config(:redirect_uri)
 
-    body = %{
-      client_id: client_id,
-      client_secret: client_secret,
-      code: code,
-      grant_type: "authorization_code"
-    }
+    body =
+      %{
+        client_id: client_id,
+        client_secret: client_secret,
+        code: code,
+        grant_type: "authorization_code"
+      }
+      |> maybe_add_redirect_uri(redirect_uri)
 
-    Req.post("#{@base_url}/oauth/token/",
+    Req.post("#{@oauth_base_url}/oauth/token/",
       json: body,
       headers: [
         {"content-type", "application/json"}
@@ -96,7 +101,7 @@ defmodule FareharborClient do
       grant_type: "refresh_token"
     }
 
-    Req.post("#{@base_url}/oauth/token/",
+    Req.post("#{@oauth_base_url}/oauth/token/",
       json: body,
       headers: [
         {"content-type", "application/json"}
@@ -195,6 +200,12 @@ defmodule FareharborClient do
     base = get_config(:base_url, @base_url)
     path = String.trim_leading(path, "/")
     "#{base}/#{path}"
+  end
+
+  defp maybe_add_redirect_uri(body, nil), do: body
+
+  defp maybe_add_redirect_uri(body, redirect_uri) do
+    Map.put(body, :redirect_uri, redirect_uri)
   end
 
   defp handle_response({:ok, %Req.Response{status: status, body: body}})

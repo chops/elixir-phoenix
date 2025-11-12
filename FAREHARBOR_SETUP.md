@@ -63,8 +63,9 @@ Exchange your authorization code for an access token:
 ```elixir
 # You'll receive the authorization code from the OAuth flow
 auth_code = "your_authorization_code"
+redirect_uri = "https://yourapp.com/callback"  # Must match what you registered
 
-case FareharborClient.get_access_token(auth_code) do
+case FareharborClient.get_access_token(auth_code, redirect_uri: redirect_uri) do
   {:ok, token_data} ->
     # Token data contains:
     # %{
