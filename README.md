@@ -1,3 +1,7 @@
+# 🚨🚨🚨 WARNING!! 🚨🚨🚨 
+* This is a vibe-learning experiment and I would absolutely NOT follow what's in here blindly; a lot of this is straight-up AI slop.
+* Over time I hope to clean this up as I learn the fundamentals of the Elixir ecosystem.
+
 # Elixir Systems Mastery
 
 A comprehensive Elixir/OTP learning project structured as an umbrella application, covering production-grade systems design from fundamentals to deployment.
